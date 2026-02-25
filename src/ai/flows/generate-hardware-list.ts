@@ -111,7 +111,7 @@ Consider all termination types, wire diameters, pin sizes, and material specific
 Pay close attention to quantities, ensuring all components have their necessary fittings.
 
 Example of expected output structure:
-```json
+\`\`\`json
 {
   "hardwareList": [
     {
@@ -131,7 +131,7 @@ Example of expected output structure:
   ],
   "summary": "The hardware list includes components for two main shrouds, one forestay, and one halyard, with suggested replacement parts from leading marine hardware manufacturers."
 }
-```
+\`\`\`
 `,
 });
 
