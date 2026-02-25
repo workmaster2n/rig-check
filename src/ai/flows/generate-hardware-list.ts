@@ -31,7 +31,7 @@ const RiggingComponentSchema = z.object({
 /**
  * Input schema for the generateHardwareList flow.
  */
-export const GenerateHardwareListInputSchema = z.object({
+const GenerateHardwareListInputSchema = z.object({
   projectName: z.string().describe('Name of the rigging survey project'),
   vesselName: z.string().optional().describe('Name of the vessel being surveyed'),
   components: z.array(RiggingComponentSchema).describe('List of detailed rigging components surveyed for replacement or inspection.'),
@@ -57,7 +57,7 @@ const HardwareItemSchema = z.object({
 /**
  * Output schema for the generateHardwareList flow.
  */
-export const GenerateHardwareListOutputSchema = z.object({
+const GenerateHardwareListOutputSchema = z.object({
   hardwareList: z.array(HardwareItemSchema).describe('A comprehensive list of all required hardware and suggested replacement parts.'),
   summary: z.string().optional().describe('A brief summary and recommendations for the generated hardware list.'),
 });
@@ -106,7 +106,7 @@ Based on the above information, generate a comprehensive hardware list in JSON f
 4.  Suggest a 'suggestedReplacementPart' name or type.
 5.  Add any relevant 'notes' for ordering or installation.
 
-Ensure that the output strictly adheres to the 'GenerateHardwareListOutputSchema'.
+Ensure that the output strictly adheres to the requested schema.
 Consider all termination types, wire diameters, pin sizes, and material specifications when determining the required hardware (e.g., swage fittings, turnbuckles, toggles, thimbles, shackles, pins, mast tangs, chainplates).
 Pay close attention to quantities, ensuring all components have their necessary fittings.
 
