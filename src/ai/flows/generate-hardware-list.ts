@@ -106,7 +106,7 @@ Based on the above information, generate a comprehensive hardware list in JSON f
 4.  Suggest a 'suggestedReplacementPart' name or type.
 5.  Add any relevant 'notes' for ordering or installation.
 
-Ensure that the output strictly adheres to the `GenerateHardwareListOutputSchema`.
+Ensure that the output strictly adheres to the 'GenerateHardwareListOutputSchema'.
 Consider all termination types, wire diameters, pin sizes, and material specifications when determining the required hardware (e.g., swage fittings, turnbuckles, toggles, thimbles, shackles, pins, mast tangs, chainplates).
 Pay close attention to quantities, ensuring all components have their necessary fittings.
 
