@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -7,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RiggingComponentForm } from "@/components/RiggingComponentForm";
-import { HardwareListGenerator } from "@/components/HardwareListGenerator";
 import { 
   Ship, 
   Plus, 
@@ -246,8 +246,6 @@ export default function ProjectDetail() {
         </div>
 
         <div className="space-y-8">
-          <HardwareListGenerator project={project} />
-          
           <Card className="nautical-gradient border-primary/20">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
