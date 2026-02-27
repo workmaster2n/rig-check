@@ -2,21 +2,32 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { saveProject, getSettings, RigSettings } from "@/lib/store";
+import { getSettings, RigSettings } from "@/lib/store";
+import { useUser, useFirestore } from "@/firebase";
+import { doc, collection, serverTimestamp } from "firebase/firestore";
+import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SearchableSelect } from "@/components/ui/searchable-select";
-import { Anchor, ChevronLeft, Ship } from "lucide-react";
+import { Anchor, ChevronLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 
 export default function NewProject() {
   const router = useRouter();
-  const [name, setName] = useState("");
+  const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
+  const [projectName, setProjectName] = useState("");
   const [vesselName, setVesselName] = useState("");
   const [boatType, setBoatType] = useState("");
   const [settings, setSettings] = useState<RigSettings | null>(null);
+
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push("/login");
+    }
+  }, [user, isUserLoading, router]);
 
   useEffect(() => {
     setSettings(getSettings());
@@ -24,9 +35,9 @@ export default function NewProject() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !vesselName || !settings) return;
+    if (!projectName || !vesselName || !settings || !user || !firestore) return;
 
-    const id = Math.random().toString(36).substr(2, 9);
+    const projectId = Math.random().toString(36).substr(2, 9);
     
     // Start with global default checklist
     const tasks = [...settings.defaultChecklist];
@@ -42,18 +53,30 @@ export default function NewProject() {
       task
     }));
 
-    saveProject({
-      id,
-      name,
+    const projectData = {
+      id: projectId,
+      projectName,
       vesselName,
       boatType,
-      components: [],
-      miscellaneousHardware: [],
       checklist,
-      createdAt: Date.now()
-    });
-    router.push(`/projects/${id}`);
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      surveyDate: new Date().toISOString(),
+    };
+
+    const projectRef = doc(firestore, "users", user.uid, "riggingProjects", projectId);
+    setDocumentNonBlocking(projectRef, projectData, { merge: true });
+    
+    router.push(`/projects/${projectId}`);
   };
+
+  if (isUserLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
@@ -102,8 +125,8 @@ export default function NewProject() {
               <Input 
                 id="name" 
                 placeholder="e.g. Standing Rigging Replacement 2024" 
-                value={name} 
-                onChange={(e) => setName(e.target.value)}
+                value={projectName} 
+                onChange={(e) => setProjectName(e.target.value)}
                 required
               />
             </div>

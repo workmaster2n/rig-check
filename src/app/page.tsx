@@ -2,10 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getProjects, deleteProject, RigProject } from "@/lib/store";
+import { useRouter } from "next/navigation";
+import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, query, orderBy, deleteDoc, doc } from "firebase/firestore";
+import { deleteDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Anchor, Plus, Ship, Calendar, Trash2, ArrowRight, Settings2 } from "lucide-react";
+import { Anchor, Plus, Ship, Calendar, Trash2, ArrowRight, Settings2, LogOut, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import {
   AlertDialog,
@@ -20,16 +23,45 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function Home() {
-  const [projects, setProjects] = useState<RigProject[]>([]);
+  const router = useRouter();
+  const { user, isUserLoading, auth } = useUser();
+  const firestore = useFirestore();
 
   useEffect(() => {
-    setProjects(getProjects());
-  }, []);
+    if (!isUserLoading && !user) {
+      router.push("/login");
+    }
+  }, [user, isUserLoading, router]);
 
-  const handleDelete = (id: string) => {
-    deleteProject(id);
-    setProjects(getProjects());
+  const projectsQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(
+      collection(firestore, "users", user.uid, "riggingProjects"),
+      orderBy("createdAt", "desc")
+    );
+  }, [firestore, user]);
+
+  const { data: projects, isLoading: isProjectsLoading } = useCollection(projectsQuery);
+
+  const handleDelete = (projectId: string) => {
+    if (!user) return;
+    const projectRef = doc(firestore, "users", user.uid, "riggingProjects", projectId);
+    deleteDocumentNonBlocking(projectRef);
   };
+
+  const handleSignOut = () => {
+    auth.signOut().then(() => router.push("/login"));
+  };
+
+  if (isUserLoading || (user && isProjectsLoading)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+      </div>
+    );
+  }
+
+  if (!user) return null;
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -40,8 +72,8 @@ export default function Home() {
             <h1 className="text-4xl font-black tracking-tight text-white">RigSurvey</h1>
           </div>
           <p className="text-muted-foreground text-lg">Marine Rigging Survey & Specification Tool</p>
-        </div>
-        <div className="flex gap-3">
+        </div >
+        <div className="flex flex-wrap gap-3">
           <Link href="/admin">
             <Button variant="outline" size="lg" className="border-border hover:bg-secondary/50 font-semibold gap-2">
               <Settings2 className="w-5 h-5" />
@@ -54,10 +86,13 @@ export default function Home() {
               New Survey
             </Button>
           </Link>
+          <Button variant="ghost" size="lg" onClick={handleSignOut} className="text-muted-foreground hover:text-white">
+            <LogOut className="w-5 h-5" />
+          </Button>
         </div>
       </header>
 
-      {projects.length === 0 ? (
+      {projects?.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 bg-secondary/20 rounded-2xl border-2 border-dashed border-border text-center px-6">
           <Ship className="w-20 h-20 text-muted-foreground/30 mb-6" />
           <h2 className="text-2xl font-bold mb-2">No Survey Projects Yet</h2>
@@ -72,7 +107,7 @@ export default function Home() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects.map((project) => (
+          {projects?.map((project) => (
             <Card key={project.id} className="group hover:border-accent/50 transition-all duration-300 nautical-gradient relative overflow-hidden">
               <CardHeader>
                 <div className="flex justify-between items-start mb-2">
@@ -94,7 +129,7 @@ export default function Home() {
                       <AlertDialogHeader>
                         <AlertDialogTitle>Delete Survey Project?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          This will permanently delete the survey for <strong>{project.vesselName}</strong> and all associated component data.
+                          This will permanently delete the survey for <strong>{project.vesselName}</strong> and all associated data.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -110,7 +145,7 @@ export default function Home() {
                   </AlertDialog>
                 </div>
                 <CardTitle className="text-xl group-hover:text-accent transition-colors">
-                  {project.name}
+                  {project.projectName}
                 </CardTitle>
                 <CardDescription className="flex items-center gap-2">
                   <span className="font-semibold text-foreground/80">{project.vesselName}</span>
@@ -119,13 +154,7 @@ export default function Home() {
               <CardContent>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Calendar className="w-4 h-4" />
-                  {format(project.createdAt, "PPP")}
-                </div>
-                <div className="mt-4 flex gap-4">
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold uppercase tracking-wider text-primary/70">Components</span>
-                    <span className="text-lg font-mono">{project.components.length}</span>
-                  </div>
+                  {project.createdAt ? format(new Date(project.createdAt), "PPP") : "Date unknown"}
                 </div>
               </CardContent>
               <CardFooter>
