@@ -30,8 +30,8 @@ export function RiggingComponentForm({ initialData, onSubmit, onCancel }: Riggin
       id: initialData?.id || Math.random().toString(36).substr(2, 9),
       type: initialData?.type || "",
       quantity: initialData?.quantity || 1,
-      lengthInMeters: initialData?.lengthInMeters,
-      diameterInMM: initialData?.diameterInMM,
+      length: initialData?.length || "",
+      diameter: initialData?.diameter || "",
       material: initialData?.material || "1x19 Stainless Steel",
       upperTermination: initialData?.upperTermination || "",
       lowerTermination: initialData?.lowerTermination || "",
@@ -88,12 +88,12 @@ export function RiggingComponentForm({ initialData, onSubmit, onCancel }: Riggin
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <FormField
             control={form.control}
-            name="lengthInMeters"
+            name="length"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Length (m)</FormLabel>
+                <FormLabel>Length (e.g. 10m or 33ft)</FormLabel>
                 <FormControl>
-                  <Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                  <Input placeholder="e.g. 12.5m" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -101,12 +101,12 @@ export function RiggingComponentForm({ initialData, onSubmit, onCancel }: Riggin
           />
           <FormField
             control={form.control}
-            name="diameterInMM"
+            name="diameter"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Diameter (mm)</FormLabel>
+                <FormLabel>Diameter (e.g. 8mm or 5/16)</FormLabel>
                 <FormControl>
-                  <Input type="number" step="0.5" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                  <Input placeholder="e.g. 8mm" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

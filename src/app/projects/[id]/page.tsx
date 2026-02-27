@@ -77,6 +77,17 @@ export default function ProjectDetail() {
     setProject(updated);
   };
 
+  const parseLengthInMeters = (l: string | undefined) => {
+    if (!l) return 0;
+    const num = parseFloat(l);
+    if (isNaN(num)) return 0;
+    // Simple heuristic for conversion in summary
+    if (l.toLowerCase().includes('ft') || l.includes("'")) return num * 0.3048;
+    return num;
+  };
+
+  const totalLengthMeters = project.components.reduce((acc, c) => acc + parseLengthInMeters(c.length) * c.quantity, 0);
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -125,7 +136,7 @@ export default function ProjectDetail() {
                 <Card className="border-accent/30 nautical-gradient">
                   <CardHeader>
                     <CardTitle>{editingComp ? "Edit Component" : "Add New Component"}</CardTitle>
-                    <CardDescription>Enter the dimensions and terminations for this piece of rigging.</CardDescription>
+                    <CardDescription>Enter dimensions and terminations for this piece of rigging.</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <RiggingComponentForm 
@@ -151,8 +162,8 @@ export default function ProjectDetail() {
                               <div>
                                 <h4 className="text-lg font-bold text-accent">{comp.type}</h4>
                                 <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm">
-                                  <span className="text-foreground/80 font-mono">L: {comp.lengthInMeters}m</span>
-                                  <span className="text-foreground/80 font-mono">D: {comp.diameterInMM}mm</span>
+                                  <span className="text-foreground/80 font-mono">L: {comp.length || "-"}</span>
+                                  <span className="text-foreground/80 font-mono">D: {comp.diameter || "-"}</span>
                                   <span className="text-primary/90 font-medium">QTY: {comp.quantity}</span>
                                 </div>
                               </div>
@@ -246,9 +257,9 @@ export default function ProjectDetail() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1">
-                <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Total Length</p>
+                <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Est. Total Length (meters)</p>
                 <p className="text-2xl font-mono text-white">
-                  {project.components.reduce((acc, c) => acc + (c.lengthInMeters || 0) * c.quantity, 0).toFixed(2)}m
+                  {totalLengthMeters.toFixed(2)}m
                 </p>
               </div>
               <div className="space-y-1">
@@ -259,7 +270,7 @@ export default function ProjectDetail() {
               </div>
               <div className="pt-4 border-t border-border">
                 <p className="text-xs text-muted-foreground leading-relaxed italic">
-                  Tip: Always double-check pin diameters with a vernier caliper before ordering terminals.
+                  Tip: Use standard abbreviations like 'm' or 'ft' for lengths and 'mm' or fractions for wire and pins.
                 </p>
               </div>
             </CardContent>
