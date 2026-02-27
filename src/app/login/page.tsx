@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -6,15 +7,13 @@ import { useAuth, useUser } from "@/firebase";
 import { 
   initiateEmailSignIn, 
   initiateEmailSignUp, 
-  initiateAnonymousSignIn,
-  initiateGoogleSignIn 
+  initiateAnonymousSignIn
 } from "@/firebase/non-blocking-login";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Anchor, Loader2, Mail, Lock, Chrome } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { Anchor, Loader2, Mail, Lock } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -44,33 +43,6 @@ export default function LoginPage() {
   const handleAnonymous = () => {
     setLoading(true);
     initiateAnonymousSignIn(auth);
-  };
-
-  const handleGoogleSignIn = () => {
-    setLoading(true);
-    initiateGoogleSignIn(auth)
-      .then(() => {
-        // Success handled by useUser hook and useEffect redirect
-      })
-      .catch((error: any) => {
-        setLoading(false);
-        console.error("Google sign-in failed:", error);
-        
-        let errorMessage = "Could not sign in with Google. Please try again.";
-        if (error.code === 'auth/operation-not-allowed') {
-          errorMessage = "Google Sign-In is not enabled in the Firebase Console. Please enable it in Authentication > Sign-in method.";
-        } else if (error.code === 'auth/popup-blocked') {
-          errorMessage = "The sign-in popup was blocked by your browser. Please allow popups for this site.";
-        } else if (error.code === 'auth/cancelled-popup-request') {
-          errorMessage = "The sign-in process was cancelled.";
-        }
-
-        toast({
-          variant: "destructive",
-          title: "Sign-In Error",
-          description: errorMessage,
-        });
-      });
   };
 
   if (isUserLoading) {
@@ -141,16 +113,6 @@ export default function LoginPage() {
           </div>
 
           <div className="grid grid-cols-1 gap-3">
-            <Button 
-              variant="outline" 
-              className="w-full border-border hover:bg-secondary gap-2" 
-              onClick={handleGoogleSignIn} 
-              disabled={loading}
-            >
-              <Chrome className="w-4 h-4 text-accent" />
-              Sign in with Google
-            </Button>
-            
             <Button 
               variant="ghost" 
               className="w-full text-muted-foreground hover:text-white" 
