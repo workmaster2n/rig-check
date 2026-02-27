@@ -24,7 +24,8 @@ import {
   ClipboardCheck,
   CheckCircle2,
   Circle,
-  Loader2
+  Loader2,
+  ClipboardList
 } from "lucide-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
@@ -155,8 +156,8 @@ export default function ProjectDetail() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className="lg:col-span-3 space-y-8">
           <Tabs defaultValue="components" className="w-full">
             <TabsList className="bg-secondary/30 border border-border p-1 w-full flex overflow-x-auto">
               <TabsTrigger value="components" className="flex-1 gap-2 px-6">
@@ -170,6 +171,10 @@ export default function ProjectDetail() {
               <TabsTrigger value="misc" className="flex-1 gap-2 px-6">
                 <Settings className="w-4 h-4" />
                 Misc
+              </TabsTrigger>
+              <TabsTrigger value="summary" className="flex-1 gap-2 px-6">
+                <ClipboardList className="w-4 h-4" />
+                Summary
               </TabsTrigger>
             </TabsList>
 
@@ -359,6 +364,82 @@ export default function ProjectDetail() {
                         </Button>
                       </div>
                     ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="summary" className="mt-6">
+              <Card className="nautical-gradient border-border">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ClipboardList className="w-6 h-6 text-accent" />
+                    Bill of Materials
+                  </CardTitle>
+                  <CardDescription>Consolidated list of all required hardware for {project.vesselName}.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-8">
+                    <div>
+                      <h4 className="text-sm font-bold uppercase tracking-widest text-primary mb-4">Rigging Components</h4>
+                      {(project.components || []).length === 0 ? (
+                        <p className="text-sm text-muted-foreground italic">No rigging components added.</p>
+                      ) : (
+                        <div className="border rounded-lg overflow-hidden border-border bg-background/20 overflow-x-auto">
+                          <table className="w-full text-sm text-left border-collapse">
+                            <thead className="bg-secondary/50 text-muted-foreground uppercase text-[10px] font-bold">
+                              <tr>
+                                <th className="px-4 py-3 border-b border-border">Item</th>
+                                <th className="px-4 py-3 border-b border-border text-center">Qty</th>
+                                <th className="px-4 py-3 border-b border-border">Specs</th>
+                                <th className="px-4 py-3 border-b border-border">Terminations</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border">
+                              {project.components.map((comp: any) => (
+                                <tr key={comp.id} className="hover:bg-white/5 transition-colors">
+                                  <td className="px-4 py-4 font-bold text-accent align-top whitespace-nowrap">{comp.type}</td>
+                                  <td className="px-4 py-4 font-mono text-center align-top">{comp.quantity}x</td>
+                                  <td className="px-4 py-4 text-xs align-top">
+                                    {comp.length && <div className="font-medium">Length: {comp.length}</div>}
+                                    {comp.diameter && <div className="text-foreground/80">Dia: {comp.diameter}</div>}
+                                    {comp.material && <div className="text-muted-foreground mt-1">{comp.material}</div>}
+                                  </td>
+                                  <td className="px-4 py-4 text-[10px] leading-tight align-top">
+                                    <div className="mb-2">
+                                      <span className="text-muted-foreground font-bold uppercase tracking-tighter">Upper:</span>
+                                      <div className="font-medium">{comp.upperTermination || "-"}</div>
+                                      {comp.pinSizeUpper && <div className="text-accent">Pin: {comp.pinSizeUpper}</div>}
+                                    </div>
+                                    <div>
+                                      <span className="text-muted-foreground font-bold uppercase tracking-tighter">Lower:</span>
+                                      <div className="font-medium">{comp.lowerTermination || "-"}</div>
+                                      {comp.pinSizeLower && <div className="text-accent">Pin: {comp.pinSizeLower}</div>}
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <h4 className="text-sm font-bold uppercase tracking-widest text-primary mb-4">Miscellaneous Hardware</h4>
+                      {(project.miscellaneousHardware || []).length === 0 ? (
+                        <p className="text-sm text-muted-foreground italic">No miscellaneous hardware added.</p>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {project.miscellaneousHardware.map((misc: any) => (
+                            <div key={misc.id} className="p-4 rounded-lg border border-border bg-background/20 flex justify-between items-center group hover:border-accent/30 transition-colors">
+                              <span className="font-medium text-foreground/90">{misc.item}</span>
+                              <span className="px-2 py-1 bg-secondary rounded text-xs font-bold text-accent min-w-[40px] text-center">{misc.quantity}x</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
