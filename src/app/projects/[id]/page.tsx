@@ -20,7 +20,6 @@ import {
   Ruler, 
   Settings,
   Info,
-  Image as ImageIcon,
   ClipboardCheck,
   CheckCircle2,
   Circle,
@@ -28,11 +27,23 @@ import {
   ClipboardList,
   Layers,
   Wrench,
-  Dna
+  Dna,
+  Mail,
+  Send
 } from "lucide-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { toast } from "@/hooks/use-toast";
+import { generateRiggingEmail } from "@/ai/flows/email-rigging-spec-flow";
 
 export default function ProjectDetail() {
   const { id } = useParams();
@@ -44,6 +55,11 @@ export default function ProjectDetail() {
   const [editingComp, setEditingComp] = useState<RiggingComponent | undefined>();
   const [newMisc, setNewMisc] = useState({ item: "", quantity: 1 });
   const [newCheckItem, setNewCheckItem] = useState("");
+  
+  // Email dialog state
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+  const [recipientEmail, setRecipientEmail] = useState("");
+  const [isSending, setIsSending] = useState(false);
 
   const projectRef = useMemoFirebase(() => {
     if (!firestore || !user || !id) return null;
@@ -55,6 +71,8 @@ export default function ProjectDetail() {
   useEffect(() => {
     if (!isAuthLoading && !user) {
       router.push("/login");
+    } else if (user?.email) {
+      setRecipientEmail(user.email);
     }
   }, [user, isAuthLoading, router]);
 
@@ -144,45 +162,69 @@ export default function ProjectDetail() {
     const mat = comp.material || "N/A";
     const len = parseLengthInMeters(comp.length) * qty;
 
-    // Aggregate Wire
     if (mat !== "N/A" || dia !== "N/A") {
       const wireKey = `${mat}-${dia}`;
-      if (!wireTotals[wireKey]) {
-        wireTotals[wireKey] = { material: mat, diameter: dia, length: 0 };
-      }
+      if (!wireTotals[wireKey]) wireTotals[wireKey] = { material: mat, diameter: dia, length: 0 };
       wireTotals[wireKey].length += len;
     }
 
-    // Aggregate Upper Fitting & Pins
     if (comp.upperTermination && comp.upperTermination !== "None") {
       const pin = comp.pinSizeUpper || "N/A";
       const fittingKey = `${comp.upperTermination}-${pin}-${dia}`;
-      if (!fittingTotals[fittingKey]) {
-        fittingTotals[fittingKey] = { type: comp.upperTermination, pinSize: pin, diameter: dia, quantity: 0 };
-      }
+      if (!fittingTotals[fittingKey]) fittingTotals[fittingKey] = { type: comp.upperTermination, pinSize: pin, diameter: dia, quantity: 0 };
       fittingTotals[fittingKey].quantity += qty;
-
       if (pin !== "N/A") {
         if (!pinTotals[pin]) pinTotals[pin] = { size: pin, quantity: 0 };
         pinTotals[pin].quantity += qty;
       }
     }
 
-    // Aggregate Lower Fitting & Pins
     if (comp.lowerTermination && comp.lowerTermination !== "None") {
       const pin = comp.pinSizeLower || "N/A";
       const fittingKey = `${comp.lowerTermination}-${pin}-${dia}`;
-      if (!fittingTotals[fittingKey]) {
-        fittingTotals[fittingKey] = { type: comp.lowerTermination, pinSize: pin, diameter: dia, quantity: 0 };
-      }
+      if (!fittingTotals[fittingKey]) fittingTotals[fittingKey] = { type: comp.lowerTermination, pinSize: pin, diameter: dia, quantity: 0 };
       fittingTotals[fittingKey].quantity += qty;
-
       if (pin !== "N/A") {
         if (!pinTotals[pin]) pinTotals[pin] = { size: pin, quantity: 0 };
         pinTotals[pin].quantity += qty;
       }
     }
   });
+
+  const handleSendEmail = async () => {
+    if (!recipientEmail) return;
+    setIsSending(true);
+    try {
+      await generateRiggingEmail({
+        projectName: project.projectName,
+        vesselName: project.vesselName,
+        boatType: project.boatType,
+        recipientEmail: recipientEmail,
+        components: project.components || [],
+        miscellaneousHardware: project.miscellaneousHardware || [],
+        pickList: {
+          wire: Object.values(wireTotals),
+          fittings: Object.values(fittingTotals),
+          pins: Object.values(pinTotals),
+        }
+      });
+      
+      toast({
+        title: "Email Generated",
+        description: `Professional specification for ${project.vesselName} has been prepared and sent to ${recipientEmail}.`,
+      });
+      setIsEmailDialogOpen(false);
+    } catch (error) {
+      console.error("Email error:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to generate rigging specification email.",
+      });
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -208,6 +250,13 @@ export default function ProjectDetail() {
             </div>
           </div>
         </div>
+        <Button 
+          onClick={() => setIsEmailDialogOpen(true)}
+          className="bg-accent/10 hover:bg-accent/20 text-accent border border-accent/30 gap-2 font-bold"
+        >
+          <Mail className="w-4 h-4" />
+          Email Specification
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -299,18 +348,6 @@ export default function ProjectDetail() {
                                 {comp.pinSizeLower && <p className="text-accent">Pin: {comp.pinSizeLower}</p>}
                               </div>
                             </div>
-                            
-                            {comp.photos && comp.photos.length > 0 && (
-                              <div className="mt-4 pt-4 border-t border-border/30">
-                                <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
-                                  {comp.photos.map((photo, i) => (
-                                    <div key={i} className="flex-shrink-0 w-16 h-16 rounded-md overflow-hidden border border-border">
-                                      <img src={photo} alt={`${comp.type} ${i + 1}`} className="w-full h-full object-cover" />
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
                           </CardContent>
                         </Card>
                       ))}
@@ -362,12 +399,7 @@ export default function ProjectDetail() {
                                 {item.task}
                               </span>
                             </div>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="opacity-0 group-hover:opacity-100" 
-                              onClick={() => handleDeleteChecklistItem(item.id)}
-                            >
+                            <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100" onClick={() => handleDeleteChecklistItem(item.id)}>
                               <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
                             </Button>
                           </div>
@@ -389,19 +421,11 @@ export default function ProjectDetail() {
                   <div className="flex gap-3 items-end">
                     <div className="flex-1 space-y-2">
                       <Label>Item Description</Label>
-                      <Input 
-                        placeholder="e.g. M10 Clevis Pins" 
-                        value={newMisc.item} 
-                        onChange={(e) => setNewMisc({...newMisc, item: e.target.value})}
-                      />
+                      <Input placeholder="e.g. M10 Clevis Pins" value={newMisc.item} onChange={(e) => setNewMisc({...newMisc, item: e.target.value})} />
                     </div>
                     <div className="w-24 space-y-2">
                       <Label>Qty</Label>
-                      <Input 
-                        type="number" 
-                        value={newMisc.quantity} 
-                        onChange={(e) => setNewMisc({...newMisc, quantity: parseInt(e.target.value)})}
-                      />
+                      <Input type="number" value={newMisc.quantity} onChange={(e) => setNewMisc({...newMisc, quantity: parseInt(e.target.value)})} />
                     </div>
                     <Button onClick={handleAddMisc} className="bg-primary">Add</Button>
                   </div>
@@ -409,13 +433,8 @@ export default function ProjectDetail() {
                   <div className="mt-8 space-y-2">
                     {(project.miscellaneousHardware || []).map(m => (
                       <div key={m.id} className="flex justify-between items-center p-3 rounded-lg border border-border bg-background/30">
-                        <div>
-                          <span className="font-bold text-primary mr-3">{m.quantity}x</span>
-                          <span>{m.item}</span>
-                        </div>
-                        <Button variant="ghost" size="icon" onClick={() => handleDeleteMisc(m.id)}>
-                          <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
-                        </Button>
+                        <div><span className="font-bold text-primary mr-3">{m.quantity}x</span><span>{m.item}</span></div>
+                        <Button variant="ghost" size="icon" onClick={() => handleDeleteMisc(m.id)}><Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" /></Button>
                       </div>
                     ))}
                   </div>
@@ -433,99 +452,40 @@ export default function ProjectDetail() {
                   <CardDescription>Consolidated hardware requirements for {project.vesselName}.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-8">
-                  {/* Wire & Cable Summary */}
                   <div>
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-primary mb-4 flex items-center gap-2">
-                      <Layers className="w-4 h-4" />
-                      Wire & Cable
-                    </h4>
-                    {Object.keys(wireTotals).length === 0 ? (
-                      <p className="text-sm text-muted-foreground italic">No wire specifications recorded.</p>
-                    ) : (
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-primary mb-4 flex items-center gap-2"><Layers className="w-4 h-4" />Wire & Cable</h4>
+                    {Object.keys(wireTotals).length === 0 ? <p className="text-sm text-muted-foreground italic">No wire specifications.</p> : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {Object.values(wireTotals).map((wire, idx) => (
                           <div key={idx} className="p-4 rounded-lg border border-border bg-background/20 flex justify-between items-center">
-                            <div>
-                              <p className="font-bold text-foreground">{wire.material}</p>
-                              <p className="text-xs text-muted-foreground">Diameter: {wire.diameter}</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-lg font-mono font-bold text-accent">{wire.length.toFixed(2)}m</p>
-                              <p className="text-[10px] uppercase text-muted-foreground tracking-tighter">Total length</p>
-                            </div>
+                            <div><p className="font-bold">{wire.material}</p><p className="text-xs text-muted-foreground">Dia: {wire.diameter}</p></div>
+                            <div className="text-right"><p className="text-lg font-mono font-bold text-accent">{wire.length.toFixed(2)}m</p></div>
                           </div>
                         ))}
                       </div>
                     )}
                   </div>
-
-                  {/* Fittings Summary */}
                   <div>
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-primary mb-4 flex items-center gap-2">
-                      <Wrench className="w-4 h-4" />
-                      Fittings & Terminations
-                    </h4>
-                    {Object.keys(fittingTotals).length === 0 ? (
-                      <p className="text-sm text-muted-foreground italic">No terminations recorded.</p>
-                    ) : (
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-primary mb-4 flex items-center gap-2"><Wrench className="w-4 h-4" />Fittings</h4>
+                    {Object.keys(fittingTotals).length === 0 ? <p className="text-sm text-muted-foreground italic">No fittings.</p> : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {Object.values(fittingTotals).sort((a, b) => a.type.localeCompare(b.type)).map((fitting, idx) => (
-                          <div key={idx} className="p-4 rounded-lg border border-border bg-background/20 flex justify-between items-center group hover:border-accent/30 transition-colors">
-                            <div>
-                              <p className="font-bold text-foreground">{fitting.type}</p>
-                              <div className="flex gap-3 text-xs text-muted-foreground">
-                                <span>Pin: {fitting.pinSize}</span>
-                                <span>Wire: {fitting.diameter}</span>
-                              </div>
-                            </div>
-                            <div className="px-3 py-1 bg-secondary rounded font-mono font-bold text-accent text-lg">
-                              {fitting.quantity}x
-                            </div>
+                        {Object.values(fittingTotals).map((fitting, idx) => (
+                          <div key={idx} className="p-4 rounded-lg border border-border bg-background/20 flex justify-between items-center">
+                            <div><p className="font-bold">{fitting.type}</p><p className="text-xs text-muted-foreground">Pin: {fitting.pinSize} / Wire: {fitting.diameter}</p></div>
+                            <div className="px-3 py-1 bg-secondary rounded font-mono font-bold text-accent">{fitting.quantity}x</div>
                           </div>
                         ))}
                       </div>
                     )}
                   </div>
-
-                  {/* Clevis Pins Summary */}
                   <div>
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-primary mb-4 flex items-center gap-2">
-                      <Dna className="w-4 h-4" />
-                      Clevis Pins & Fasteners
-                    </h4>
-                    {Object.keys(pinTotals).length === 0 ? (
-                      <p className="text-sm text-muted-foreground italic">No pins recorded from terminations.</p>
-                    ) : (
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-primary mb-4 flex items-center gap-2"><Dna className="w-4 h-4" />Clevis Pins</h4>
+                    {Object.keys(pinTotals).length === 0 ? <p className="text-sm text-muted-foreground italic">No pins from terminations.</p> : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {Object.values(pinTotals).sort((a, b) => a.size.localeCompare(b.size)).map((pin, idx) => (
-                          <div key={idx} className="p-4 rounded-lg border border-border bg-background/20 flex justify-between items-center group hover:border-accent/30 transition-colors">
-                            <div>
-                              <p className="font-bold text-foreground">Clevis Pin: {pin.size}</p>
-                              <p className="text-[10px] uppercase text-muted-foreground tracking-tighter">Required for fittings</p>
-                            </div>
-                            <div className="px-3 py-1 bg-secondary rounded font-mono font-bold text-accent text-lg">
-                              {pin.quantity}x
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Misc Hardware Summary */}
-                  <div>
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-primary mb-4 flex items-center gap-2">
-                      <Package className="w-4 h-4" />
-                      Miscellaneous Hardware
-                    </h4>
-                    {(project.miscellaneousHardware || []).length === 0 ? (
-                      <p className="text-sm text-muted-foreground italic">No additional items recorded.</p>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {project.miscellaneousHardware.map((misc: any) => (
-                          <div key={misc.id} className="p-4 rounded-lg border border-border bg-background/20 flex justify-between items-center group hover:border-accent/30 transition-colors">
-                            <span className="font-medium text-foreground/90">{misc.item}</span>
-                            <span className="px-3 py-1 bg-secondary rounded font-mono font-bold text-accent text-lg">{misc.quantity}x</span>
+                        {Object.values(pinTotals).map((pin, idx) => (
+                          <div key={idx} className="p-4 rounded-lg border border-border bg-background/20 flex justify-between items-center">
+                            <div><p className="font-bold">Pin: {pin.size}</p></div>
+                            <div className="px-3 py-1 bg-secondary rounded font-mono font-bold text-accent">{pin.quantity}x</div>
                           </div>
                         ))}
                       </div>
@@ -539,41 +499,61 @@ export default function ProjectDetail() {
 
         <div className="space-y-8">
           <Card className="nautical-gradient border-primary/20">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Info className="w-4 h-4 text-primary" />
-                Survey Status
-              </CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Info className="w-4 h-4 text-primary" />Survey Status</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1">
-                <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Checklist Progress</p>
-                <div className="flex items-end gap-2">
-                  <p className="text-3xl font-black text-white">
-                    {project.checklist ? 
-                      Math.round((project.checklist.filter(item => 
-                        (project.components || []).some(c => item.task.toLowerCase().includes(c.type.toLowerCase()))
-                      ).length / Math.max(1, project.checklist.length)) * 100) : 0
-                    }%
-                  </p>
-                  <p className="text-sm text-muted-foreground pb-1">Complete</p>
-                </div>
+                <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Progress</p>
+                <p className="text-3xl font-black text-white">
+                  {project.checklist ? Math.round((project.checklist.filter(item => (project.components || []).some(c => item.task.toLowerCase().includes(c.type.toLowerCase()))).length / Math.max(1, project.checklist.length)) * 100) : 0}%
+                </p>
               </div>
               <div className="space-y-1">
-                <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Est. Total Length</p>
-                <p className="text-2xl font-mono text-white">
-                  {totalLengthMeters.toFixed(2)}m
-                </p>
-              </div>
-              <div className="pt-4 border-t border-border">
-                <p className="text-xs text-muted-foreground leading-relaxed italic">
-                  Vessel: <span className="text-foreground not-italic">{project.boatType || "Custom"}</span>
-                </p>
+                <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Total Wire</p>
+                <p className="text-2xl font-mono text-white">{totalLengthMeters.toFixed(2)}m</p>
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
+
+      <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
+        <DialogContent className="nautical-gradient border-border text-foreground">
+          <DialogHeader>
+            <DialogTitle>Email Rigging Specification</DialogTitle>
+            <DialogDescription>
+              Generate and send a professional bill of materials and component list.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="recipient">Recipient Email</Label>
+              <Input 
+                id="recipient"
+                placeholder="client@example.com"
+                value={recipientEmail}
+                onChange={(e) => setRecipientEmail(e.target.value)}
+                className="bg-background/50"
+              />
+              {!user?.email && (
+                <p className="text-[10px] text-muted-foreground italic">
+                  Note: You are logged in as a guest. Please provide an email.
+                </p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsEmailDialogOpen(false)}>Cancel</Button>
+            <Button 
+              onClick={handleSendEmail} 
+              disabled={!recipientEmail || isSending}
+              className="bg-accent text-background font-bold gap-2"
+            >
+              {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              Generate & Send
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
