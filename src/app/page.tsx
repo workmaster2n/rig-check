@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useUser, useFirestore, useAuth, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, orderBy, deleteDoc, doc } from "firebase/firestore";
 import { deleteDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,8 @@ import {
 
 export default function Home() {
   const router = useRouter();
-  const { user, isUserLoading, auth } = useUser();
+  const { user, isUserLoading } = useUser();
+  const auth = useAuth();
   const firestore = useFirestore();
 
   useEffect(() => {
