@@ -34,7 +34,44 @@ export interface RigProject {
   createdAt: number;
 }
 
+export interface RigSettings {
+  componentTypes: string[];
+  terminationTypes: string[];
+}
+
 const STORAGE_KEY = 'rig_survey_projects';
+const SETTINGS_KEY = 'rig_survey_settings';
+
+const DEFAULT_SETTINGS: RigSettings = {
+  componentTypes: [
+    "Main Shroud (Cap)",
+    "Lower Shroud",
+    "Intermediate Shroud",
+    "Forestay",
+    "Backstay",
+    "Inner Forestay",
+    "Seagull Striker",
+    "Runner",
+    "Checkstay",
+    "Halyard",
+    "Baby Stay",
+    "Other Stay/Shroud"
+  ],
+  terminationTypes: [
+    "Swage Stud",
+    "Toggle Fork",
+    "Toggle Eye",
+    "T-Ball",
+    "Eye Terminal",
+    "Stemball",
+    "Thimble",
+    "Dead-eye",
+    "Turnbuckle Body",
+    "Mechanical Terminal (Sta-Lok/Norseman)",
+    "Spliced Eye (Dyneema)",
+    "Other"
+  ]
+};
 
 export const getProjects = (): RigProject[] => {
   if (typeof window === 'undefined') return [];
@@ -61,4 +98,14 @@ export const deleteProject = (id: string) => {
 
 export const getProject = (id: string): RigProject | undefined => {
   return getProjects().find((p) => p.id === id);
+};
+
+export const getSettings = (): RigSettings => {
+  if (typeof window === 'undefined') return DEFAULT_SETTINGS;
+  const stored = localStorage.getItem(SETTINGS_KEY);
+  return stored ? JSON.parse(stored) : DEFAULT_SETTINGS;
+};
+
+export const saveSettings = (settings: RigSettings) => {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 };

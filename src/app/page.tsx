@@ -5,7 +5,7 @@ import Link from "next/link";
 import { getProjects, deleteProject, RigProject } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Anchor, Plus, Ship, Calendar, Trash2, ArrowRight } from "lucide-react";
+import { Anchor, Plus, Ship, Calendar, Trash2, ArrowRight, Settings2 } from "lucide-react";
 import { format } from "date-fns";
 
 export default function Home() {
@@ -24,7 +24,7 @@ export default function Home() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <header className="mb-12 flex justify-between items-center">
+      <header className="mb-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <div className="flex items-center gap-3 mb-2">
             <Anchor className="w-10 h-10 text-accent" />
@@ -32,12 +32,20 @@ export default function Home() {
           </div>
           <p className="text-muted-foreground text-lg">Marine Rigging Survey & Specification Tool</p>
         </div>
-        <Link href="/projects/new">
-          <Button size="lg" className="bg-accent hover:bg-accent/80 text-background font-bold gap-2">
-            <Plus className="w-5 h-5" />
-            New Survey
-          </Button>
-        </Link>
+        <div className="flex gap-3">
+          <Link href="/admin">
+            <Button variant="outline" size="lg" className="border-border hover:bg-secondary/50 font-semibold gap-2">
+              <Settings2 className="w-5 h-5" />
+              Configure Library
+            </Button>
+          </Link>
+          <Link href="/projects/new">
+            <Button size="lg" className="bg-accent hover:bg-accent/80 text-background font-bold gap-2 shadow-lg shadow-accent/20">
+              <Plus className="w-5 h-5" />
+              New Survey
+            </Button>
+          </Link>
+        </div>
       </header>
 
       {projects.length === 0 ? (
@@ -56,7 +64,7 @@ export default function Home() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.map((project) => (
-            <Card key={project.id} className="group hover:border-accent/50 transition-all duration-300 nautical-gradient">
+            <Card key={project.id} className="group hover:border-accent/50 transition-all duration-300 nautical-gradient relative overflow-hidden">
               <CardHeader>
                 <div className="flex justify-between items-start mb-2">
                   <div className="p-2 bg-primary/20 rounded-lg">

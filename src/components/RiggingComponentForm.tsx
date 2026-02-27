@@ -1,8 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { RiggingComponent, RiggingComponentSchema } from "@/lib/store";
+import { RiggingComponent, RiggingComponentSchema, getSettings, RigSettings } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,37 +17,13 @@ interface RiggingComponentFormProps {
   onCancel: () => void;
 }
 
-const componentTypes = [
-  "Main Shroud (Cap)",
-  "Lower Shroud",
-  "Intermediate Shroud",
-  "Forestay",
-  "Backstay",
-  "Inner Forestay",
-  "Seagull Striker",
-  "Runner",
-  "Checkstay",
-  "Halyard",
-  "Baby Stay",
-  "Other Stay/Shroud"
-];
-
-const terminationTypes = [
-  "Swage Stud",
-  "Toggle Fork",
-  "Toggle Eye",
-  "T-Ball",
-  "Eye Terminal",
-  "Stemball",
-  "Thimble",
-  "Dead-eye",
-  "Turnbuckle Body",
-  "Mechanical Terminal (Sta-Lok/Norseman)",
-  "Spliced Eye (Dyneema)",
-  "Other"
-];
-
 export function RiggingComponentForm({ initialData, onSubmit, onCancel }: RiggingComponentFormProps) {
+  const [settings, setSettings] = useState<RigSettings | null>(null);
+
+  useEffect(() => {
+    setSettings(getSettings());
+  }, []);
+
   const form = useForm<RiggingComponent>({
     resolver: zodResolver(RiggingComponentSchema),
     defaultValues: {
@@ -63,6 +40,8 @@ export function RiggingComponentForm({ initialData, onSubmit, onCancel }: Riggin
       notes: initialData?.notes || ""
     }
   });
+
+  if (!settings) return null;
 
   return (
     <Form {...form}>
@@ -81,7 +60,7 @@ export function RiggingComponentForm({ initialData, onSubmit, onCancel }: Riggin
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {componentTypes.map(t => (
+                    {settings.componentTypes.map(t => (
                       <SelectItem key={t} value={t}>{t}</SelectItem>
                     ))}
                   </SelectContent>
@@ -164,7 +143,7 @@ export function RiggingComponentForm({ initialData, onSubmit, onCancel }: Riggin
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {terminationTypes.map(t => (
+                      {settings.terminationTypes.map(t => (
                         <SelectItem key={t} value={t}>{t}</SelectItem>
                       ))}
                     </SelectContent>
@@ -203,7 +182,7 @@ export function RiggingComponentForm({ initialData, onSubmit, onCancel }: Riggin
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {terminationTypes.map(t => (
+                      {settings.terminationTypes.map(t => (
                         <SelectItem key={t} value={t}>{t}</SelectItem>
                       ))}
                     </SelectContent>
