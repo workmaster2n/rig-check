@@ -1,0 +1,239 @@
+{
+  "entities": {
+    "RiggingProject": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "RiggingProject",
+      "type": "object",
+      "description": "Represents a single rigging survey project, associating collected data with a specific vessel or job.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the RiggingProject entity."
+        },
+        "projectName": {
+          "type": "string",
+          "description": "The descriptive name or title for the rigging survey project."
+        },
+        "vesselName": {
+          "type": "string",
+          "description": "The name of the vessel for which the rigging survey is being conducted."
+        },
+        "surveyDate": {
+          "type": "string",
+          "description": "The date when the rigging survey was performed.",
+          "format": "date-time"
+        },
+        "description": {
+          "type": "string",
+          "description": "A general description or any overarching notes about the rigging project."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when this project record was initially created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when this project record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "projectName",
+        "vesselName",
+        "surveyDate",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "RiggingComponent": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "RiggingComponent",
+      "type": "object",
+      "description": "Represents a specific rigging component, such as a shroud or stay, with detailed specifications captured during a survey.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the RiggingComponent entity."
+        },
+        "riggingProjectId": {
+          "type": "string",
+          "description": "Reference to the RiggingProject this component belongs to. (Relationship: RiggingProject 1:N RiggingComponent)"
+        },
+        "name": {
+          "type": "string",
+          "description": "A specific name or identifier for the component (e.g., 'Port Lower Shroud', 'Starboard Inner Forestay')."
+        },
+        "componentType": {
+          "type": "string",
+          "description": "The generic type or classification of the rigging component (e.g., 'Shroud', 'Stay', 'Runner', 'Halyard', 'Seagull Striker', 'Inner Forestay')."
+        },
+        "quantity": {
+          "type": "number",
+          "description": "The number of identical units of this specific component."
+        },
+        "length": {
+          "type": "number",
+          "description": "The measured length of the component (e.g., in meters or feet)."
+        },
+        "diameter": {
+          "type": "number",
+          "description": "The measured diameter or thickness of the component (e.g., in millimeters or inches)."
+        },
+        "material": {
+          "type": "string",
+          "description": "The material composition of the component (e.g., 'Stainless Steel Wire', 'Dyneema', 'Rod Rigging')."
+        },
+        "upperTerminationType": {
+          "type": "string",
+          "description": "The type of fitting or termination found at the upper end of the component (e.g., 'Eye Splice', 'Swage Fork', 'Norseman Toggle')."
+        },
+        "upperPinSize": {
+          "type": "number",
+          "description": "The size of the pin used in the upper termination, if applicable (e.g., in millimeters or inches)."
+        },
+        "lowerTerminationType": {
+          "type": "string",
+          "description": "The type of fitting or termination found at the lower end of the component (e.g., 'Eye Splice', 'Swage Fork', 'Turnbuckle')."
+        },
+        "lowerPinSize": {
+          "type": "number",
+          "description": "The size of the pin used in the lower termination, if applicable (e.g., in millimeters or inches)."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Any specific observations, conditions, or additional details about this component."
+        }
+      },
+      "required": [
+        "id",
+        "riggingProjectId",
+        "name",
+        "componentType",
+        "quantity",
+        "length",
+        "diameter",
+        "material"
+      ]
+    },
+    "MiscellaneousHardware": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "MiscellaneousHardware",
+      "type": "object",
+      "description": "Represents additional or custom rigging hardware items that are not covered by the structured RiggingComponent fields.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the MiscellaneousHardware entity."
+        },
+        "riggingProjectId": {
+          "type": "string",
+          "description": "Reference to the RiggingProject this miscellaneous hardware item belongs to. (Relationship: RiggingProject 1:N MiscellaneousHardware)"
+        },
+        "name": {
+          "type": "string",
+          "description": "The name or type of the miscellaneous hardware item (e.g., 'Mast Boot', 'Spreader Tip', 'Spare Shackle')."
+        },
+        "quantity": {
+          "type": "number",
+          "description": "The number of units of this miscellaneous hardware item."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the miscellaneous hardware item, including its specifications or purpose."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Any additional specific notes or observations about this miscellaneous item."
+        }
+      },
+      "required": [
+        "id",
+        "riggingProjectId",
+        "name",
+        "quantity",
+        "description"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}/riggingProjects/{projectId}",
+        "definition": {
+          "entityName": "RiggingProject",
+          "schema": {
+            "$ref": "#/backend/entities/RiggingProject"
+          },
+          "description": "Stores individual rigging survey projects. Each project is owned by a specific user, identified by the 'userId' in the path, ensuring private access. The 'projectId' identifies a unique project within that user's collection.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns this rigging project."
+            },
+            {
+              "name": "projectId",
+              "description": "The unique identifier for the RiggingProject."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/riggingProjects/{projectId}/riggingComponents/{componentId}",
+        "definition": {
+          "entityName": "RiggingComponent",
+          "schema": {
+            "$ref": "#/backend/entities/RiggingComponent"
+          },
+          "description": "Stores detailed specifications for individual rigging components that belong to a specific RiggingProject. The 'userId' and 'projectId' in the path ensure that access to these components is restricted to the owning user and project. Includes denormalized 'riggingProjectId' for data integrity checks.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns the parent rigging project."
+            },
+            {
+              "name": "projectId",
+              "description": "The unique identifier for the parent RiggingProject."
+            },
+            {
+              "name": "componentId",
+              "description": "The unique identifier for the RiggingComponent."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/riggingProjects/{projectId}/miscellaneousHardware/{hardwareId}",
+        "definition": {
+          "entityName": "MiscellaneousHardware",
+          "schema": {
+            "$ref": "#/backend/entities/MiscellaneousHardware"
+          },
+          "description": "Stores additional or custom rigging hardware items associated with a specific RiggingProject. The 'userId' and 'projectId' in the path ensure that access to this hardware is restricted to the owning user and project. Includes denormalized 'riggingProjectId' for data integrity checks.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns the parent rigging project."
+            },
+            {
+              "name": "projectId",
+              "description": "The unique identifier for the parent RiggingProject."
+            },
+            {
+              "name": "hardwareId",
+              "description": "The unique identifier for the MiscellaneousHardware item."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The recommended Firestore structure leverages a strict hierarchical, path-based ownership model to ensure Authorization Independence, simplify security rules, and enable efficient Queryability for All Principals (QAPs).\n\n1.  **Authorization Independence (CRITICAL):** By making `/users/{userId}/riggingProjects/{projectId}` the root of all project-related data, the `userId` is directly embedded in the path. This eliminates the need for `get()` calls in security rules to check project ownership from subcollections like `riggingComponents` or `miscellaneousHardware`. For example, to check if a user can access a `riggingComponent`, the rule simply compares `request.auth.uid` with the `{userId}` wildcard in the path, and verifies that the `riggingProjectId` field within the component document matches the `{projectId}` wildcard. This atomic check prevents breaking transactions/batches and greatly simplifies rule logic and debugging.\n\n2.  **Structural Segregation & QAPs:** All documents within a given collection (e.g., `riggingProjects`, `riggingComponents`) will have a homogeneous security posture. A user can only access their own data, as enforced by the `users/{userId}` prefix. This naturally supports QAPs by allowing secure `list` operations. A user can query `/users/{request.auth.uid}/riggingProjects` to get all their projects, or `/users/{request.auth.uid}/riggingProjects/{projectId}/riggingComponents` to get all components for a specific project, without requiring server-side filtering or complex client-side authorization. The `request.auth.uid` directly maps to the `{userId}` wildcard in the path, ensuring that only data owned by the authenticated user is ever returned.\n\n3.  **Access Modeling & Hierarchy:** The structure `/users/{userId}/riggingProjects/{projectId}` clearly indicates that `RiggingProject`s are owned by individual users. Nested subcollections like `riggingComponents` and `miscellaneousHardware` further extend this hierarchy, cleanly associating components and hardware with their respective projects and, by extension, their owners. This ensures that a `RiggingComponent` can only exist within a `RiggingProject`, which can only exist under a specific `User`.\n\n4.  **Data Integrity:** Although the `riggingProjectId` is technically redundant for path-based authorization at the subcollection level (as `{projectId}` is in the path), keeping it in the `RiggingComponent` and `MiscellaneousHardware` documents provides an additional layer of data integrity. Security rules can enforce that `resource.data.riggingProjectId == projectId` for extra robustness during writes.\n\nThis design prioritizes security and maintainability, ensuring that the application can scale without introducing complex authorization logic or performance bottlenecks in Firestore security rules."
+  }
+}

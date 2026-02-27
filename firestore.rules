@@ -1,0 +1,103 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * CORE PHILOSOPHY:
+     * This ruleset implements a strict hierarchical ownership model where all rigging survey data is 
+     * private to the authenticated user who created it. Access is determined primarily by the 
+     * user's placement within the document path (/users/{userId}/...).
+     *
+     * DATA STRUCTURE:
+     * Data is organized under a top-level user identifier:
+     * /users/{userId}/riggingProjects/{projectId}
+     *   /riggingComponents/{componentId}
+     *   /miscellaneousHardware/{hardwareId}
+     *
+     * KEY SECURITY DECISIONS:
+     * 1. Path-Based Authorization: By embedding the userId in the path, we perform high-performance 
+     *    authorization checks without needing additional collection lookups or cross-document reads.
+     * 2. Prototyping Flexibility: While access is strictly controlled, the rules do not enforce 
+     *    specific data types or non-relational fields (like descriptions or names) to allow for 
+     *    rapid schema iteration.
+     * 3. Relational Integrity: The rules enforce that internal foreign keys (like riggingProjectId) 
+     *    match the document's location in the hierarchy to prevent data corruption or unauthorized 
+     *    data cross-linking.
+     * 4. Safe List Operations: Listing is restricted to the specific user's own data tree, ensuring 
+     *    privacy and preventing unauthorized data discovery.
+     */
+
+    // --- Global Helper Functions ---
+
+    /**
+     * @description Checks if a user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the authenticated user matches the provided userId from the path.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the user is the owner and the document exists for state-changing operations.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    // --- Collection Rules ---
+
+    /**
+     * @description Manages RiggingProject documents. Access is restricted to the user specified in the path.
+     * @path /users/{userId}/riggingProjects/{projectId}
+     * @allow User 'user123' (create) project 'projA' where path is /users/user123/...
+     * @deny User 'user123' (update) project 'projB' where path is /users/user456/...
+     * @principle Enforces path-based ownership and validates relational ID consistency.
+     */
+    match /users/{userId}/riggingProjects/{projectId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == projectId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+
+      /**
+       * @description Detailed specifications for rigging components (shrouds, stays, etc.) belonging to a project.
+       * @path /users/{userId}/riggingProjects/{projectId}/riggingComponents/{componentId}
+       * @allow User 'user123' (list) components under their own project 'projA'.
+       * @deny User 'user123' (create) component where riggingProjectId does not match the parent projectId.
+       * @principle Hierarchical ownership check with relational integrity for sub-resources.
+       */
+      match /riggingComponents/{componentId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.riggingProjectId == projectId;
+        allow update: if isExistingOwner(userId) && request.resource.data.riggingProjectId == resource.data.riggingProjectId;
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Custom or miscellaneous hardware associated with a specific rigging project.
+       * @path /users/{userId}/riggingProjects/{projectId}/miscellaneousHardware/{hardwareId}
+       * @allow User 'user123' (get) a specific hardware item from their project tree.
+       * @deny User 'user123' (delete) hardware belonging to 'user456'.
+       * @principle Prevents cross-user data access and ensures components stay linked to the correct project.
+       */
+      match /miscellaneousHardware/{hardwareId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.riggingProjectId == projectId;
+        allow update: if isExistingOwner(userId) && request.resource.data.riggingProjectId == resource.data.riggingProjectId;
+        allow delete: if isExistingOwner(userId);
+      }
+    }
+
+    // --- Catch-All Deny ---
+    // Explicitly deny access to any other paths to ensure a "closed by default" security posture.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
