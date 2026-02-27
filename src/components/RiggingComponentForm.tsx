@@ -10,8 +10,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { SearchableSelect } from "@/components/ui/searchable-select";
-import { Camera, X, Image as ImageIcon, Plus } from "lucide-react";
+import { Camera, X, Image as ImageIcon, Plus, CameraIcon } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 interface RiggingComponentFormProps {
   initialData?: Partial<RiggingComponent>;
@@ -22,7 +24,12 @@ interface RiggingComponentFormProps {
 export function RiggingComponentForm({ initialData, onSubmit, onCancel }: RiggingComponentFormProps) {
   const [settings, setSettings] = useState<RigSettings | null>(null);
   const [photos, setPhotos] = useState<string[]>(initialData?.photos || []);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     setSettings(getSettings());
@@ -66,6 +73,54 @@ export function RiggingComponentForm({ initialData, onSubmit, onCancel }: Riggin
 
   const handleFormSubmit = (data: RiggingComponent) => {
     onSubmit({ ...data, photos });
+  };
+
+  const startCamera = async () => {
+    setIsCameraOpen(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' } 
+      });
+      setHasCameraPermission(true);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      setHasCameraPermission(false);
+      toast({
+        variant: 'destructive',
+        title: 'Camera Access Denied',
+        description: 'Please enable camera permissions in your browser settings to use this feature.',
+      });
+    }
+  };
+
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      const tracks = stream.getTracks();
+      tracks.forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+    setIsCameraOpen(false);
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      const context = canvas.getContext('2d');
+
+      if (context) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUri = canvas.toDataURL('image/jpeg', 0.8);
+        setPhotos(prev => [...prev, dataUri]);
+        stopCamera();
+      }
+    }
   };
 
   if (!settings) return null;
@@ -229,7 +284,7 @@ export function RiggingComponentForm({ initialData, onSubmit, onCancel }: Riggin
 
         <div className="space-y-4 border-t border-border pt-4">
           <Label className="flex items-center gap-2">
-            <Camera className="w-4 h-4 text-primary" />
+            <ImageIcon className="w-4 h-4 text-primary" />
             Photos
           </Label>
           <div className="flex flex-wrap gap-4">
@@ -245,14 +300,24 @@ export function RiggingComponentForm({ initialData, onSubmit, onCancel }: Riggin
                 </button>
               </div>
             ))}
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="w-24 h-24 rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center text-muted-foreground hover:text-accent hover:border-accent transition-all bg-background/50"
-            >
-              <Plus className="w-6 h-6 mb-1" />
-              <span className="text-[10px] font-bold uppercase">Add Photo</span>
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={startCamera}
+                className="w-24 h-24 rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center text-muted-foreground hover:text-accent hover:border-accent transition-all bg-background/50"
+              >
+                <Camera className="w-6 h-6 mb-1" />
+                <span className="text-[10px] font-bold uppercase text-center px-1">Take Photo</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-24 h-24 rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center text-muted-foreground hover:text-accent hover:border-accent transition-all bg-background/50"
+              >
+                <Plus className="w-6 h-6 mb-1" />
+                <span className="text-[10px] font-bold uppercase">Upload</span>
+              </button>
+            </div>
             <input
               type="file"
               ref={fileInputRef}
@@ -283,6 +348,43 @@ export function RiggingComponentForm({ initialData, onSubmit, onCancel }: Riggin
           <Button type="submit" className="bg-primary text-primary-foreground">Save Component</Button>
         </div>
       </form>
+
+      <Dialog open={isCameraOpen} onOpenChange={(open) => !open && stopCamera()}>
+        <DialogContent className="sm:max-w-md bg-background border-border">
+          <DialogHeader>
+            <DialogTitle>Capture Photo</DialogTitle>
+          </DialogHeader>
+          <div className="relative aspect-video bg-black rounded-md overflow-hidden flex items-center justify-center">
+            <video 
+              ref={videoRef} 
+              className="w-full h-full object-cover" 
+              autoPlay 
+              muted 
+              playsInline 
+            />
+            {hasCameraPermission === false && (
+              <Alert variant="destructive" className="absolute inset-x-4 top-4">
+                <AlertTitle>Camera Access Required</AlertTitle>
+                <AlertDescription>
+                  Please allow camera access to use this feature.
+                </AlertDescription>
+              </Alert>
+            )}
+            <canvas ref={canvasRef} className="hidden" />
+          </div>
+          <DialogFooter className="flex-row justify-between gap-2">
+            <Button variant="outline" onClick={stopCamera}>Cancel</Button>
+            <Button 
+              className="bg-accent text-background hover:bg-accent/80 flex-1 gap-2" 
+              onClick={capturePhoto}
+              disabled={!hasCameraPermission}
+            >
+              <CameraIcon className="w-4 h-4" />
+              Capture
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Form>
   );
 }
