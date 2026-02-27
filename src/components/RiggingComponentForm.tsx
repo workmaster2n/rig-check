@@ -112,10 +112,15 @@ export function RiggingComponentForm({ initialData, onSubmit, onCancel }: Riggin
             control={form.control}
             name="material"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="flex flex-col">
                 <FormLabel>Material</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g. 1x19 SS, Dyneema" {...field} />
+                  <SearchableSelect 
+                    options={settings.materialTypes || []}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Select material"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

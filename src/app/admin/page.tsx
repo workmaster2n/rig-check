@@ -6,14 +6,14 @@ import { getSettings, saveSettings, RigSettings } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { ChevronLeft, Plus, Trash2, Settings2, Package, Anchor } from "lucide-react";
+import { ChevronLeft, Plus, Trash2, Settings2, Package, Anchor, Layers } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 export default function AdminPage() {
   const [settings, setSettings] = useState<RigSettings | null>(null);
   const [newComponentType, setNewComponentType] = useState("");
   const [newTerminationType, setNewTerminationType] = useState("");
+  const [newMaterialType, setNewMaterialType] = useState("");
 
   useEffect(() => {
     setSettings(getSettings());
@@ -65,8 +65,30 @@ export default function AdminPage() {
     toast({ title: "Removed", description: `${type} removed.` });
   };
 
+  const handleAddMaterialType = () => {
+    if (!newMaterialType.trim()) return;
+    const updated = {
+      ...settings,
+      materialTypes: [...(settings.materialTypes || []), newMaterialType.trim()]
+    };
+    saveSettings(updated);
+    setSettings(updated);
+    setNewMaterialType("");
+    toast({ title: "Success", description: "Material type added." });
+  };
+
+  const handleDeleteMaterialType = (type: string) => {
+    const updated = {
+      ...settings,
+      materialTypes: (settings.materialTypes || []).filter(t => t !== type)
+    };
+    saveSettings(updated);
+    setSettings(updated);
+    toast({ title: "Removed", description: `${type} removed.` });
+  };
+
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="container mx-auto px-4 py-8 max-w-6xl">
       <header className="mb-12 flex justify-between items-center">
         <div className="flex items-center gap-4">
           <Link href="/">
@@ -84,7 +106,7 @@ export default function AdminPage() {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {/* Component Types */}
         <Card className="nautical-gradient border-border">
           <CardHeader>
@@ -92,12 +114,12 @@ export default function AdminPage() {
               <Package className="w-5 h-5 text-primary" />
               Component Types
             </CardTitle>
-            <CardDescription>Define the available types of stays, shrouds, and halyards.</CardDescription>
+            <CardDescription>Define types of stays, shrouds, and halyards.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex gap-2">
               <Input 
-                placeholder="New component type..." 
+                placeholder="New type..." 
                 value={newComponentType}
                 onChange={(e) => setNewComponentType(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAddComponentType()}
@@ -106,7 +128,7 @@ export default function AdminPage() {
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
-            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
               {settings.componentTypes.map((type) => (
                 <div key={type} className="flex justify-between items-center p-3 rounded-lg border border-border bg-background/30 group hover:border-primary/50 transition-colors">
                   <span className="text-sm">{type}</span>
@@ -131,12 +153,12 @@ export default function AdminPage() {
               <Anchor className="w-5 h-5 text-accent" />
               Termination Types
             </CardTitle>
-            <CardDescription>Configure terminals, fittings, and ends for your inventory.</CardDescription>
+            <CardDescription>Configure terminals, fittings, and ends.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex gap-2">
               <Input 
-                placeholder="New termination type..." 
+                placeholder="New termination..." 
                 value={newTerminationType}
                 onChange={(e) => setNewTerminationType(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAddTerminationType()}
@@ -145,7 +167,7 @@ export default function AdminPage() {
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
-            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
               {settings.terminationTypes.map((type) => (
                 <div key={type} className="flex justify-between items-center p-3 rounded-lg border border-border bg-background/30 group hover:border-accent/50 transition-colors">
                   <span className="text-sm">{type}</span>
@@ -154,6 +176,45 @@ export default function AdminPage() {
                     size="icon" 
                     className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
                     onClick={() => handleDeleteTerminationType(type)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Material Types */}
+        <Card className="nautical-gradient border-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Layers className="w-5 h-5 text-primary" />
+              Material Types
+            </CardTitle>
+            <CardDescription>Manage rigging materials (SS, Dyneema, etc.)</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex gap-2">
+              <Input 
+                placeholder="New material..." 
+                value={newMaterialType}
+                onChange={(e) => setNewMaterialType(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddMaterialType()}
+              />
+              <Button onClick={handleAddMaterialType} className="bg-primary">
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+              {(settings.materialTypes || []).map((type) => (
+                <div key={type} className="flex justify-between items-center p-3 rounded-lg border border-border bg-background/30 group hover:border-primary/50 transition-colors">
+                  <span className="text-sm">{type}</span>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
+                    onClick={() => handleDeleteMaterialType(type)}
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>

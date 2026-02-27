@@ -37,6 +37,7 @@ export interface RigProject {
 export interface RigSettings {
   componentTypes: string[];
   terminationTypes: string[];
+  materialTypes: string[];
 }
 
 const STORAGE_KEY = 'rig_survey_projects';
@@ -70,6 +71,17 @@ const DEFAULT_SETTINGS: RigSettings = {
     "Mechanical Terminal (Sta-Lok/Norseman)",
     "Spliced Eye (Dyneema)",
     "Other"
+  ],
+  materialTypes: [
+    "1x19 Stainless Steel",
+    "Hammer",
+    "Dyform",
+    "7x7 Stainless Steel",
+    "7x19 Stainless Steel",
+    "Compact Strand",
+    "Dyneema SK78",
+    "Dyneema SK99",
+    "Rod Rigging"
   ]
 };
 
@@ -103,7 +115,14 @@ export const getProject = (id: string): RigProject | undefined => {
 export const getSettings = (): RigSettings => {
   if (typeof window === 'undefined') return DEFAULT_SETTINGS;
   const stored = localStorage.getItem(SETTINGS_KEY);
-  return stored ? JSON.parse(stored) : DEFAULT_SETTINGS;
+  if (!stored) return DEFAULT_SETTINGS;
+  
+  const parsed = JSON.parse(stored);
+  // Ensure materialTypes exists for legacy storage
+  if (!parsed.materialTypes) {
+    parsed.materialTypes = DEFAULT_SETTINGS.materialTypes;
+  }
+  return parsed;
 };
 
 export const saveSettings = (settings: RigSettings) => {
