@@ -3,12 +3,17 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth, useUser } from "@/firebase";
-import { initiateEmailSignIn, initiateEmailSignUp, initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
+import { 
+  initiateEmailSignIn, 
+  initiateEmailSignUp, 
+  initiateAnonymousSignIn,
+  initiateGoogleSignIn 
+} from "@/firebase/non-blocking-login";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Anchor, Loader2, Mail, Lock, UserPlus } from "lucide-react";
+import { Anchor, Loader2, Mail, Lock, Chrome } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 export default function LoginPage() {
@@ -34,13 +39,16 @@ export default function LoginPage() {
     } else {
       initiateEmailSignIn(auth, email, password);
     }
-    // We don't await because non-blocking-login doesn't return a promise we should await
-    // The onAuthStateChanged listener in the provider handles the redirect.
   };
 
   const handleAnonymous = () => {
     setLoading(true);
     initiateAnonymousSignIn(auth);
+  };
+
+  const handleGoogleSignIn = () => {
+    setLoading(true);
+    initiateGoogleSignIn(auth);
   };
 
   if (isUserLoading) {
@@ -63,7 +71,7 @@ export default function LoginPage() {
             {isSignUp ? "Create your account to start surveying" : "Sign in to manage your rigging projects"}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <form onSubmit={handleAuth} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
@@ -101,7 +109,7 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="relative my-6">
+          <div className="relative my-4">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t border-border" />
             </div>
@@ -110,9 +118,26 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <Button variant="outline" className="w-full border-border hover:bg-secondary" onClick={handleAnonymous} disabled={loading}>
-            Continue as Guest
-          </Button>
+          <div className="grid grid-cols-1 gap-3">
+            <Button 
+              variant="outline" 
+              className="w-full border-border hover:bg-secondary gap-2" 
+              onClick={handleGoogleSignIn} 
+              disabled={loading}
+            >
+              <Chrome className="w-4 h-4 text-accent" />
+              Sign in with Google
+            </Button>
+            
+            <Button 
+              variant="ghost" 
+              className="w-full text-muted-foreground hover:text-white" 
+              onClick={handleAnonymous} 
+              disabled={loading}
+            >
+              Continue as Guest
+            </Button>
+          </div>
         </CardContent>
         <CardFooter className="justify-center">
           <button
