@@ -27,7 +27,8 @@ import {
   Loader2,
   ClipboardList,
   Layers,
-  Wrench
+  Wrench,
+  Dna
 } from "lucide-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
@@ -135,6 +136,7 @@ export default function ProjectDetail() {
   // Pick List Aggregation Logic
   const wireTotals: Record<string, { material: string; diameter: string; length: number }> = {};
   const fittingTotals: Record<string, { type: string; pinSize: string; diameter: string; quantity: number }> = {};
+  const pinTotals: Record<string, { size: string; quantity: number }> = {};
 
   (project.components || []).forEach((comp: any) => {
     const qty = comp.quantity || 0;
@@ -151,7 +153,7 @@ export default function ProjectDetail() {
       wireTotals[wireKey].length += len;
     }
 
-    // Aggregate Upper Fitting
+    // Aggregate Upper Fitting & Pins
     if (comp.upperTermination && comp.upperTermination !== "None") {
       const pin = comp.pinSizeUpper || "N/A";
       const fittingKey = `${comp.upperTermination}-${pin}-${dia}`;
@@ -159,9 +161,14 @@ export default function ProjectDetail() {
         fittingTotals[fittingKey] = { type: comp.upperTermination, pinSize: pin, diameter: dia, quantity: 0 };
       }
       fittingTotals[fittingKey].quantity += qty;
+
+      if (pin !== "N/A") {
+        if (!pinTotals[pin]) pinTotals[pin] = { size: pin, quantity: 0 };
+        pinTotals[pin].quantity += qty;
+      }
     }
 
-    // Aggregate Lower Fitting
+    // Aggregate Lower Fitting & Pins
     if (comp.lowerTermination && comp.lowerTermination !== "None") {
       const pin = comp.pinSizeLower || "N/A";
       const fittingKey = `${comp.lowerTermination}-${pin}-${dia}`;
@@ -169,6 +176,11 @@ export default function ProjectDetail() {
         fittingTotals[fittingKey] = { type: comp.lowerTermination, pinSize: pin, diameter: dia, quantity: 0 };
       }
       fittingTotals[fittingKey].quantity += qty;
+
+      if (pin !== "N/A") {
+        if (!pinTotals[pin]) pinTotals[pin] = { size: pin, quantity: 0 };
+        pinTotals[pin].quantity += qty;
+      }
     }
   });
 
@@ -468,6 +480,31 @@ export default function ProjectDetail() {
                             </div>
                             <div className="px-3 py-1 bg-secondary rounded font-mono font-bold text-accent text-lg">
                               {fitting.quantity}x
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Clevis Pins Summary */}
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-primary mb-4 flex items-center gap-2">
+                      <Dna className="w-4 h-4" />
+                      Clevis Pins & Fasteners
+                    </h4>
+                    {Object.keys(pinTotals).length === 0 ? (
+                      <p className="text-sm text-muted-foreground italic">No pins recorded from terminations.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {Object.values(pinTotals).sort((a, b) => a.size.localeCompare(b.size)).map((pin, idx) => (
+                          <div key={idx} className="p-4 rounded-lg border border-border bg-background/20 flex justify-between items-center group hover:border-accent/30 transition-colors">
+                            <div>
+                              <p className="font-bold text-foreground">Clevis Pin: {pin.size}</p>
+                              <p className="text-[10px] uppercase text-muted-foreground tracking-tighter">Required for fittings</p>
+                            </div>
+                            <div className="px-3 py-1 bg-secondary rounded font-mono font-bold text-accent text-lg">
+                              {pin.quantity}x
                             </div>
                           </div>
                         ))}
