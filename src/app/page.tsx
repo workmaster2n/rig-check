@@ -7,6 +7,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Anchor, Plus, Ship, Calendar, Trash2, ArrowRight, Settings2 } from "lucide-react";
 import { format } from "date-fns";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function Home() {
   const [projects, setProjects] = useState<RigProject[]>([]);
@@ -16,10 +27,8 @@ export default function Home() {
   }, []);
 
   const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this survey project?")) {
-      deleteProject(id);
-      setProjects(getProjects());
-    }
+    deleteProject(id);
+    setProjects(getProjects());
   };
 
   return (
@@ -70,14 +79,35 @@ export default function Home() {
                   <div className="p-2 bg-primary/20 rounded-lg">
                     <Ship className="w-6 h-6 text-primary" />
                   </div>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={() => handleDelete(project.id)}
-                    className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="bg-card border-border">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Survey Project?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will permanently delete the survey for <strong>{project.vesselName}</strong> and all associated component data.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel className="bg-secondary text-foreground hover:bg-secondary/80">Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={() => handleDelete(project.id)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Delete Project
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
                 <CardTitle className="text-xl group-hover:text-accent transition-colors">
                   {project.name}
