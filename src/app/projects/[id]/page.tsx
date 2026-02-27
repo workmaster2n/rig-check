@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -17,7 +16,8 @@ import {
   Package, 
   Ruler, 
   Settings,
-  Info
+  Info,
+  Image as ImageIcon
 } from "lucide-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
@@ -81,7 +81,6 @@ export default function ProjectDetail() {
     if (!l) return 0;
     const num = parseFloat(l);
     if (isNaN(num)) return 0;
-    // Simple heuristic for conversion in summary
     if (l.toLowerCase().includes('ft') || l.includes("'")) return num * 0.3048;
     return num;
   };
@@ -156,37 +155,61 @@ export default function ProjectDetail() {
                   ) : (
                     <div className="grid grid-cols-1 gap-4">
                       {project.components.map(comp => (
-                        <Card key={comp.id} className="bg-secondary/40 hover:border-primary/50 transition-colors">
-                          <CardContent className="p-6">
-                            <div className="flex justify-between items-start mb-4">
-                              <div>
-                                <h4 className="text-lg font-bold text-accent">{comp.type}</h4>
-                                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm">
-                                  <span className="text-foreground/80 font-mono">L: {comp.length || "-"}</span>
-                                  <span className="text-foreground/80 font-mono">D: {comp.diameter || "-"}</span>
-                                  <span className="text-primary/90 font-medium">QTY: {comp.quantity}</span>
+                        <Card key={comp.id} className="bg-secondary/40 hover:border-primary/50 transition-colors overflow-hidden">
+                          <CardContent className="p-0">
+                            <div className="p-6">
+                              <div className="flex justify-between items-start mb-4">
+                                <div>
+                                  <h4 className="text-lg font-bold text-accent">{comp.type}</h4>
+                                  <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm">
+                                    <span className="text-foreground/80 font-mono">L: {comp.length || "-"}</span>
+                                    <span className="text-foreground/80 font-mono">D: {comp.diameter || "-"}</span>
+                                    <span className="text-primary/90 font-medium">QTY: {comp.quantity}</span>
+                                  </div>
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button size="icon" variant="ghost" onClick={() => { setEditingComp(comp); setShowCompForm(true); }}>
+                                    <Edit2 className="w-4 h-4" />
+                                  </Button>
+                                  <Button size="icon" variant="ghost" className="hover:text-destructive" onClick={() => handleDeleteComponent(comp.id)}>
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
                                 </div>
                               </div>
-                              <div className="flex gap-2">
-                                <Button size="icon" variant="ghost" onClick={() => { setEditingComp(comp); setShowCompForm(true); }}>
-                                  <Edit2 className="w-4 h-4" />
-                                </Button>
-                                <Button size="icon" variant="ghost" className="hover:text-destructive" onClick={() => handleDeleteComponent(comp.id)}>
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
+                              <div className="grid grid-cols-2 gap-4 text-xs mb-4">
+                                <div className="p-2 rounded bg-background/50">
+                                  <span className="block text-muted-foreground uppercase mb-1 font-bold tracking-tighter">Upper</span>
+                                  <p className="font-medium truncate">{comp.upperTermination || "Not specified"}</p>
+                                  {comp.pinSizeUpper && <p className="text-accent">Pin: {comp.pinSizeUpper}</p>}
+                                </div>
+                                <div className="p-2 rounded bg-background/50">
+                                  <span className="block text-muted-foreground uppercase mb-1 font-bold tracking-tighter">Lower</span>
+                                  <p className="font-medium truncate">{comp.lowerTermination || "Not specified"}</p>
+                                  {comp.pinSizeLower && <p className="text-accent">Pin: {comp.pinSizeLower}</p>}
+                                </div>
                               </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4 text-xs">
-                              <div className="p-2 rounded bg-background/50">
-                                <span className="block text-muted-foreground uppercase mb-1 font-bold tracking-tighter">Upper</span>
-                                <p className="font-medium truncate">{comp.upperTermination || "Not specified"}</p>
-                                {comp.pinSizeUpper && <p className="text-accent">Pin: {comp.pinSizeUpper}</p>}
-                              </div>
-                              <div className="p-2 rounded bg-background/50">
-                                <span className="block text-muted-foreground uppercase mb-1 font-bold tracking-tighter">Lower</span>
-                                <p className="font-medium truncate">{comp.lowerTermination || "Not specified"}</p>
-                                {comp.pinSizeLower && <p className="text-accent">Pin: {comp.pinSizeLower}</p>}
-                              </div>
+
+                              {comp.photos && comp.photos.length > 0 && (
+                                <div className="mt-4 pt-4 border-t border-border/30">
+                                  <div className="flex items-center gap-2 mb-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                                    <ImageIcon className="w-3 h-3" />
+                                    Photos ({comp.photos.length})
+                                  </div>
+                                  <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                                    {comp.photos.map((photo, i) => (
+                                      <div key={i} className="flex-shrink-0 w-20 h-20 rounded-md overflow-hidden border border-border">
+                                        <img src={photo} alt={`${comp.type} ${i + 1}`} className="w-full h-full object-cover" />
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {comp.notes && (
+                                <p className="mt-4 text-xs italic text-muted-foreground border-t border-border/30 pt-3">
+                                  {comp.notes}
+                                </p>
+                              )}
                             </div>
                           </CardContent>
                         </Card>
@@ -268,7 +291,7 @@ export default function ProjectDetail() {
               </div>
               <div className="pt-4 border-t border-border">
                 <p className="text-xs text-muted-foreground leading-relaxed italic">
-                  Tip: Use standard abbreviations like 'm' or 'ft' for lengths and 'mm' or fractions for wire and pins.
+                  Tip: Capture clear photos of terminals and pins to confirm sizing during order fulfillment.
                 </p>
               </div>
             </CardContent>

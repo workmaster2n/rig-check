@@ -12,6 +12,7 @@ export const RiggingComponentSchema = z.object({
   pinSizeUpper: z.string().optional(),
   pinSizeLower: z.string().optional(),
   notes: z.string().optional(),
+  photos: z.array(z.string()).optional(),
 });
 
 export type RiggingComponent = z.infer<typeof RiggingComponentSchema>;
@@ -118,7 +119,6 @@ export const getSettings = (): RigSettings => {
   if (!stored) return DEFAULT_SETTINGS;
   
   const parsed = JSON.parse(stored);
-  // Ensure materialTypes exists for legacy storage
   if (!parsed.materialTypes) {
     parsed.materialTypes = DEFAULT_SETTINGS.materialTypes;
   }
