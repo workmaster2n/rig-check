@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getProject, saveProject, RigProject, RiggingComponent, MiscHardware, ChecklistItem } from "@/lib/store";
+import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
+import { doc } from "firebase/firestore";
+import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { RiggingComponent, MiscHardware, ChecklistItem } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,84 +23,100 @@ import {
   Image as ImageIcon,
   ClipboardCheck,
   CheckCircle2,
-  Circle
+  Circle,
+  Loader2
 } from "lucide-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 
 export default function ProjectDetail() {
   const { id } = useParams();
   const router = useRouter();
-  const [project, setProject] = useState<RigProject | null>(null);
+  const { user, isUserLoading: isAuthLoading } = useUser();
+  const firestore = useFirestore();
+
   const [showCompForm, setShowCompForm] = useState(false);
   const [editingComp, setEditingComp] = useState<RiggingComponent | undefined>();
   const [newMisc, setNewMisc] = useState({ item: "", quantity: 1 });
   const [newCheckItem, setNewCheckItem] = useState("");
 
-  useEffect(() => {
-    const p = getProject(id as string);
-    if (p) setProject(p);
-  }, [id]);
+  const projectRef = useMemoFirebase(() => {
+    if (!firestore || !user || !id) return null;
+    return doc(firestore, "users", user.uid, "riggingProjects", id as string);
+  }, [firestore, user, id]);
 
-  if (!project) return <div className="p-20 text-center">Loading Project...</div>;
+  const { data: project, isLoading: isProjectLoading } = useDoc(projectRef);
+
+  useEffect(() => {
+    if (!isAuthLoading && !user) {
+      router.push("/login");
+    }
+  }, [user, isAuthLoading, router]);
+
+  if (isAuthLoading || isProjectLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+      </div>
+    );
+  }
+
+  if (!project) return <div className="p-20 text-center">Project not found or access denied.</div>;
 
   const handleSaveComponent = (comp: RiggingComponent) => {
-    const updated = { ...project };
-    const index = updated.components.findIndex(c => c.id === comp.id);
+    if (!projectRef) return;
+    const components = [...(project.components || [])];
+    const index = components.findIndex(c => c.id === comp.id);
     if (index >= 0) {
-      updated.components[index] = comp;
+      components[index] = comp;
     } else {
-      updated.components.push(comp);
+      components.push(comp);
     }
-    saveProject(updated);
-    setProject(updated);
+    updateDocumentNonBlocking(projectRef, { components, updatedAt: new Date().toISOString() });
     setShowCompForm(false);
     setEditingComp(undefined);
   };
 
   const handleDeleteComponent = (compId: string) => {
-    const updated = { ...project, components: project.components.filter(c => c.id !== compId) };
-    saveProject(updated);
-    setProject(updated);
+    if (!projectRef) return;
+    const components = (project.components || []).filter(c => c.id !== compId);
+    updateDocumentNonBlocking(projectRef, { components, updatedAt: new Date().toISOString() });
   };
 
   const handleAddMisc = () => {
-    if (!newMisc.item) return;
+    if (!newMisc.item || !projectRef) return;
     const misc: MiscHardware = {
       id: Math.random().toString(36).substr(2, 9),
       item: newMisc.item,
       quantity: newMisc.quantity
     };
-    const updated = { ...project, miscellaneousHardware: [...project.miscellaneousHardware, misc] };
-    saveProject(updated);
-    setProject(updated);
+    const miscellaneousHardware = [...(project.miscellaneousHardware || []), misc];
+    updateDocumentNonBlocking(projectRef, { miscellaneousHardware, updatedAt: new Date().toISOString() });
     setNewMisc({ item: "", quantity: 1 });
   };
 
   const handleDeleteMisc = (miscId: string) => {
-    const updated = { ...project, miscellaneousHardware: project.miscellaneousHardware.filter(m => m.id !== miscId) };
-    saveProject(updated);
-    setProject(updated);
+    if (!projectRef) return;
+    const miscellaneousHardware = (project.miscellaneousHardware || []).filter(m => m.id !== miscId);
+    updateDocumentNonBlocking(projectRef, { miscellaneousHardware, updatedAt: new Date().toISOString() });
   };
 
   const handleAddChecklistItem = () => {
-    if (!newCheckItem.trim()) return;
+    if (!newCheckItem.trim() || !projectRef) return;
     const newItem: ChecklistItem = {
       id: Math.random().toString(36).substr(2, 9),
       task: newCheckItem
     };
-    const updated = { ...project, checklist: [...(project.checklist || []), newItem] };
-    saveProject(updated);
-    setProject(updated);
+    const checklist = [...(project.checklist || []), newItem];
+    updateDocumentNonBlocking(projectRef, { checklist, updatedAt: new Date().toISOString() });
     setNewCheckItem("");
   };
 
   const handleDeleteChecklistItem = (cid: string) => {
-    const updated = { ...project, checklist: project.checklist.filter(i => i.id !== cid) };
-    saveProject(updated);
-    setProject(updated);
+    if (!projectRef) return;
+    const checklist = (project.checklist || []).filter(i => i.id !== cid);
+    updateDocumentNonBlocking(projectRef, { checklist, updatedAt: new Date().toISOString() });
   };
 
   const parseLengthInMeters = (l: string | undefined) => {
@@ -108,7 +127,7 @@ export default function ProjectDetail() {
     return num;
   };
 
-  const totalLengthMeters = project.components.reduce((acc, c) => acc + parseLengthInMeters(c.length) * c.quantity, 0);
+  const totalLengthMeters = (project.components || []).reduce((acc, c) => acc + parseLengthInMeters(c.length) * c.quantity, 0);
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -125,7 +144,7 @@ export default function ProjectDetail() {
               {project.vesselName}
             </h1>
             <div className="flex items-center gap-2">
-              <p className="text-muted-foreground">{project.name}</p>
+              <p className="text-muted-foreground">{project.projectName}</p>
               {project.boatType && (
                 <span className="px-2 py-0.5 rounded-full bg-accent/20 text-accent text-xs font-bold uppercase tracking-wider">
                   {project.boatType}
@@ -181,7 +200,7 @@ export default function ProjectDetail() {
                 </Card>
               ) : (
                 <div className="space-y-4">
-                  {project.components.length === 0 ? (
+                  {(project.components || []).length === 0 ? (
                     <div className="p-12 text-center bg-secondary/20 rounded-xl border border-dashed border-border">
                       <Ruler className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
                       <p className="text-muted-foreground">No components listed. Start adding shrouds, stays, or halyards.</p>
@@ -268,8 +287,7 @@ export default function ProjectDetail() {
                       </p>
                     ) : (
                       project.checklist.map((item) => {
-                        // Simple completion logic: if the task name matches a component type in our inventory
-                        const isCompleted = project.components.some(c => 
+                        const isCompleted = (project.components || []).some(c => 
                           item.task.toLowerCase().includes(c.type.toLowerCase())
                         );
 
@@ -330,7 +348,7 @@ export default function ProjectDetail() {
                   </div>
 
                   <div className="mt-8 space-y-2">
-                    {project.miscellaneousHardware.map(m => (
+                    {(project.miscellaneousHardware || []).map(m => (
                       <div key={m.id} className="flex justify-between items-center p-3 rounded-lg border border-border bg-background/30">
                         <div>
                           <span className="font-bold text-primary mr-3">{m.quantity}x</span>
@@ -363,7 +381,7 @@ export default function ProjectDetail() {
                   <p className="text-3xl font-black text-white">
                     {project.checklist ? 
                       Math.round((project.checklist.filter(item => 
-                        project.components.some(c => item.task.toLowerCase().includes(c.type.toLowerCase()))
+                        (project.components || []).some(c => item.task.toLowerCase().includes(c.type.toLowerCase()))
                       ).length / Math.max(1, project.checklist.length)) * 100) : 0
                     }%
                   </p>

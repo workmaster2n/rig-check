@@ -5,7 +5,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   GoogleAuthProvider,
-  signInWithRedirect,
+  signInWithPopup,
 } from 'firebase/auth';
 
 /** Initiate anonymous sign-in (non-blocking). */
@@ -32,6 +32,8 @@ export function initiateEmailSignIn(authInstance: Auth, email: string, password:
 /** Initiate Google sign-in (non-blocking). */
 export function initiateGoogleSignIn(authInstance: Auth): void {
   const provider = new GoogleAuthProvider();
-  // Using signInWithRedirect for a non-blocking experience that handles the flow externally
-  signInWithRedirect(authInstance, provider);
+  // Using signInWithPopup for a more immediate and reliable experience in prototype environments
+  signInWithPopup(authInstance, provider).catch((error) => {
+    console.error("Google sign-in failed:", error);
+  });
 }
