@@ -48,7 +48,29 @@ export default function LoginPage() {
 
   const handleGoogleSignIn = () => {
     setLoading(true);
-    initiateGoogleSignIn(auth);
+    initiateGoogleSignIn(auth)
+      .then(() => {
+        // Success handled by useUser hook and useEffect redirect
+      })
+      .catch((error: any) => {
+        setLoading(false);
+        console.error("Google sign-in failed:", error);
+        
+        let errorMessage = "Could not sign in with Google. Please try again.";
+        if (error.code === 'auth/operation-not-allowed') {
+          errorMessage = "Google Sign-In is not enabled in the Firebase Console. Please enable it in Authentication > Sign-in method.";
+        } else if (error.code === 'auth/popup-blocked') {
+          errorMessage = "The sign-in popup was blocked by your browser. Please allow popups for this site.";
+        } else if (error.code === 'auth/cancelled-popup-request') {
+          errorMessage = "The sign-in process was cancelled.";
+        }
+
+        toast({
+          variant: "destructive",
+          title: "Sign-In Error",
+          description: errorMessage,
+        });
+      });
   };
 
   if (isUserLoading) {
