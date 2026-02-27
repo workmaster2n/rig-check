@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 
 interface RiggingComponentFormProps {
   initialData?: Partial<RiggingComponent>;
@@ -51,20 +51,16 @@ export function RiggingComponentForm({ initialData, onSubmit, onCancel }: Riggin
             control={form.control}
             name="type"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="flex flex-col">
                 <FormLabel>Component Type</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {settings.componentTypes.map(t => (
-                      <SelectItem key={t} value={t}>{t}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <SearchableSelect 
+                    options={settings.componentTypes}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Select type"
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -91,9 +87,9 @@ export function RiggingComponentForm({ initialData, onSubmit, onCancel }: Riggin
             name="length"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Length (e.g. 10m or 33ft)</FormLabel>
+                <FormLabel>Length (Metric or Imperial)</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g. 12.5m" {...field} />
+                  <Input placeholder="e.g. 12.5m or 41ft" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -104,9 +100,9 @@ export function RiggingComponentForm({ initialData, onSubmit, onCancel }: Riggin
             name="diameter"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Diameter (e.g. 8mm or 5/16)</FormLabel>
+                <FormLabel>Diameter (Metric or Imperial)</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g. 8mm" {...field} />
+                  <Input placeholder="e.g. 8mm or 5/16" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -134,20 +130,16 @@ export function RiggingComponentForm({ initialData, onSubmit, onCancel }: Riggin
               control={form.control}
               name="upperTermination"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="flex flex-col">
                   <FormLabel>Type</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select termination" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {settings.terminationTypes.map(t => (
-                        <SelectItem key={t} value={t}>{t}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <SearchableSelect 
+                      options={settings.terminationTypes}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Select termination"
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -173,20 +165,16 @@ export function RiggingComponentForm({ initialData, onSubmit, onCancel }: Riggin
               control={form.control}
               name="lowerTermination"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="flex flex-col">
                   <FormLabel>Type</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select termination" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {settings.terminationTypes.map(t => (
-                        <SelectItem key={t} value={t}>{t}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <SearchableSelect 
+                      options={settings.terminationTypes}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Select termination"
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
