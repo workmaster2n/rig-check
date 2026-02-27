@@ -25,7 +25,9 @@ import {
   CheckCircle2,
   Circle,
   Loader2,
-  ClipboardList
+  ClipboardList,
+  Layers,
+  Wrench
 } from "lucide-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
@@ -129,6 +131,46 @@ export default function ProjectDetail() {
   };
 
   const totalLengthMeters = (project.components || []).reduce((acc, c) => acc + parseLengthInMeters(c.length) * c.quantity, 0);
+
+  // Pick List Aggregation Logic
+  const wireTotals: Record<string, { material: string; diameter: string; length: number }> = {};
+  const fittingTotals: Record<string, { type: string; pinSize: string; diameter: string; quantity: number }> = {};
+
+  (project.components || []).forEach((comp: any) => {
+    const qty = comp.quantity || 0;
+    const dia = comp.diameter || "N/A";
+    const mat = comp.material || "N/A";
+    const len = parseLengthInMeters(comp.length) * qty;
+
+    // Aggregate Wire
+    if (mat !== "N/A" || dia !== "N/A") {
+      const wireKey = `${mat}-${dia}`;
+      if (!wireTotals[wireKey]) {
+        wireTotals[wireKey] = { material: mat, diameter: dia, length: 0 };
+      }
+      wireTotals[wireKey].length += len;
+    }
+
+    // Aggregate Upper Fitting
+    if (comp.upperTermination && comp.upperTermination !== "None") {
+      const pin = comp.pinSizeUpper || "N/A";
+      const fittingKey = `${comp.upperTermination}-${pin}-${dia}`;
+      if (!fittingTotals[fittingKey]) {
+        fittingTotals[fittingKey] = { type: comp.upperTermination, pinSize: pin, diameter: dia, quantity: 0 };
+      }
+      fittingTotals[fittingKey].quantity += qty;
+    }
+
+    // Aggregate Lower Fitting
+    if (comp.lowerTermination && comp.lowerTermination !== "None") {
+      const pin = comp.pinSizeLower || "N/A";
+      const fittingKey = `${comp.lowerTermination}-${pin}-${dia}`;
+      if (!fittingTotals[fittingKey]) {
+        fittingTotals[fittingKey] = { type: comp.lowerTermination, pinSize: pin, diameter: dia, quantity: 0 };
+      }
+      fittingTotals[fittingKey].quantity += qty;
+    }
+  });
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -374,72 +416,83 @@ export default function ProjectDetail() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <ClipboardList className="w-6 h-6 text-accent" />
-                    Bill of Materials
+                    Bill of Materials (Pick List)
                   </CardTitle>
-                  <CardDescription>Consolidated list of all required hardware for {project.vesselName}.</CardDescription>
+                  <CardDescription>Consolidated hardware requirements for {project.vesselName}.</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-8">
-                    <div>
-                      <h4 className="text-sm font-bold uppercase tracking-widest text-primary mb-4">Rigging Components</h4>
-                      {(project.components || []).length === 0 ? (
-                        <p className="text-sm text-muted-foreground italic">No rigging components added.</p>
-                      ) : (
-                        <div className="border rounded-lg overflow-hidden border-border bg-background/20 overflow-x-auto">
-                          <table className="w-full text-sm text-left border-collapse">
-                            <thead className="bg-secondary/50 text-muted-foreground uppercase text-[10px] font-bold">
-                              <tr>
-                                <th className="px-4 py-3 border-b border-border">Item</th>
-                                <th className="px-4 py-3 border-b border-border text-center">Qty</th>
-                                <th className="px-4 py-3 border-b border-border">Specs</th>
-                                <th className="px-4 py-3 border-b border-border">Terminations</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border">
-                              {project.components.map((comp: any) => (
-                                <tr key={comp.id} className="hover:bg-white/5 transition-colors">
-                                  <td className="px-4 py-4 font-bold text-accent align-top whitespace-nowrap">{comp.type}</td>
-                                  <td className="px-4 py-4 font-mono text-center align-top">{comp.quantity}x</td>
-                                  <td className="px-4 py-4 text-xs align-top">
-                                    {comp.length && <div className="font-medium">Length: {comp.length}</div>}
-                                    {comp.diameter && <div className="text-foreground/80">Dia: {comp.diameter}</div>}
-                                    {comp.material && <div className="text-muted-foreground mt-1">{comp.material}</div>}
-                                  </td>
-                                  <td className="px-4 py-4 text-[10px] leading-tight align-top">
-                                    <div className="mb-2">
-                                      <span className="text-muted-foreground font-bold uppercase tracking-tighter">Upper:</span>
-                                      <div className="font-medium">{comp.upperTermination || "-"}</div>
-                                      {comp.pinSizeUpper && <div className="text-accent">Pin: {comp.pinSizeUpper}</div>}
-                                    </div>
-                                    <div>
-                                      <span className="text-muted-foreground font-bold uppercase tracking-tighter">Lower:</span>
-                                      <div className="font-medium">{comp.lowerTermination || "-"}</div>
-                                      {comp.pinSizeLower && <div className="text-accent">Pin: {comp.pinSizeLower}</div>}
-                                    </div>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-                    </div>
-
-                    <div>
-                      <h4 className="text-sm font-bold uppercase tracking-widest text-primary mb-4">Miscellaneous Hardware</h4>
-                      {(project.miscellaneousHardware || []).length === 0 ? (
-                        <p className="text-sm text-muted-foreground italic">No miscellaneous hardware added.</p>
-                      ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          {project.miscellaneousHardware.map((misc: any) => (
-                            <div key={misc.id} className="p-4 rounded-lg border border-border bg-background/20 flex justify-between items-center group hover:border-accent/30 transition-colors">
-                              <span className="font-medium text-foreground/90">{misc.item}</span>
-                              <span className="px-2 py-1 bg-secondary rounded text-xs font-bold text-accent min-w-[40px] text-center">{misc.quantity}x</span>
+                <CardContent className="space-y-8">
+                  {/* Wire & Cable Summary */}
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-primary mb-4 flex items-center gap-2">
+                      <Layers className="w-4 h-4" />
+                      Wire & Cable
+                    </h4>
+                    {Object.keys(wireTotals).length === 0 ? (
+                      <p className="text-sm text-muted-foreground italic">No wire specifications recorded.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {Object.values(wireTotals).map((wire, idx) => (
+                          <div key={idx} className="p-4 rounded-lg border border-border bg-background/20 flex justify-between items-center">
+                            <div>
+                              <p className="font-bold text-foreground">{wire.material}</p>
+                              <p className="text-xs text-muted-foreground">Diameter: {wire.diameter}</p>
                             </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                            <div className="text-right">
+                              <p className="text-lg font-mono font-bold text-accent">{wire.length.toFixed(2)}m</p>
+                              <p className="text-[10px] uppercase text-muted-foreground tracking-tighter">Total length</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Fittings Summary */}
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-primary mb-4 flex items-center gap-2">
+                      <Wrench className="w-4 h-4" />
+                      Fittings & Terminations
+                    </h4>
+                    {Object.keys(fittingTotals).length === 0 ? (
+                      <p className="text-sm text-muted-foreground italic">No terminations recorded.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {Object.values(fittingTotals).sort((a, b) => a.type.localeCompare(b.type)).map((fitting, idx) => (
+                          <div key={idx} className="p-4 rounded-lg border border-border bg-background/20 flex justify-between items-center group hover:border-accent/30 transition-colors">
+                            <div>
+                              <p className="font-bold text-foreground">{fitting.type}</p>
+                              <div className="flex gap-3 text-xs text-muted-foreground">
+                                <span>Pin: {fitting.pinSize}</span>
+                                <span>Wire: {fitting.diameter}</span>
+                              </div>
+                            </div>
+                            <div className="px-3 py-1 bg-secondary rounded font-mono font-bold text-accent text-lg">
+                              {fitting.quantity}x
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Misc Hardware Summary */}
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-primary mb-4 flex items-center gap-2">
+                      <Package className="w-4 h-4" />
+                      Miscellaneous Hardware
+                    </h4>
+                    {(project.miscellaneousHardware || []).length === 0 ? (
+                      <p className="text-sm text-muted-foreground italic">No additional items recorded.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {project.miscellaneousHardware.map((misc: any) => (
+                          <div key={misc.id} className="p-4 rounded-lg border border-border bg-background/20 flex justify-between items-center group hover:border-accent/30 transition-colors">
+                            <span className="font-medium text-foreground/90">{misc.item}</span>
+                            <span className="px-3 py-1 bg-secondary rounded font-mono font-bold text-accent text-lg">{misc.quantity}x</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
