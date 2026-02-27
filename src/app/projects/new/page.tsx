@@ -1,31 +1,47 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { saveProject } from "@/lib/store";
+import { saveProject, getSettings, RigSettings } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useState } from "react";
-import { Anchor, ChevronLeft } from "lucide-react";
+import { SearchableSelect } from "@/components/ui/searchable-select";
+import { Anchor, ChevronLeft, Ship } from "lucide-react";
 import Link from "next/link";
 
 export default function NewProject() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [vesselName, setVesselName] = useState("");
+  const [boatType, setBoatType] = useState("");
+  const [settings, setSettings] = useState<RigSettings | null>(null);
+
+  useEffect(() => {
+    setSettings(getSettings());
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !vesselName) return;
+    if (!name || !vesselName || !settings) return;
 
     const id = Math.random().toString(36).substr(2, 9);
+    
+    // Initialize checklist from settings
+    const checklist = settings.defaultChecklist.map(task => ({
+      id: Math.random().toString(36).substr(2, 9),
+      task
+    }));
+
     saveProject({
       id,
       name,
       vesselName,
+      boatType,
       components: [],
       miscellaneousHardware: [],
+      checklist,
       createdAt: Date.now()
     });
     router.push(`/projects/${id}`);
@@ -49,16 +65,6 @@ export default function NewProject() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="name">Project Name / Reference</Label>
-              <Input 
-                id="name" 
-                placeholder="e.g. Standing Rigging Replacement 2024" 
-                value={name} 
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="vessel">Vessel Name</Label>
               <Input 
                 id="vessel" 
@@ -68,7 +74,33 @@ export default function NewProject() {
                 required
               />
             </div>
-            <Button type="submit" className="w-full bg-accent hover:bg-accent/80 text-background font-bold text-lg py-6">
+
+            <div className="space-y-2">
+              <Label htmlFor="boatType">Boat Type / Model</Label>
+              {settings ? (
+                <SearchableSelect 
+                  options={settings.productionBoats}
+                  value={boatType}
+                  onChange={setBoatType}
+                  placeholder="Select production boat..."
+                />
+              ) : (
+                <Input placeholder="Loading boat types..." disabled />
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="name">Project Name / Reference</Label>
+              <Input 
+                id="name" 
+                placeholder="e.g. Standing Rigging Replacement 2024" 
+                value={name} 
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+
+            <Button type="submit" className="w-full bg-accent hover:bg-accent/80 text-background font-bold text-lg py-6 mt-4">
               Create Project
             </Button>
           </form>

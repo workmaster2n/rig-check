@@ -26,12 +26,20 @@ export const MiscHardwareSchema = z.object({
 
 export type MiscHardware = z.infer<typeof MiscHardwareSchema>;
 
+export interface ChecklistItem {
+  id: string;
+  task: string;
+  componentType?: string;
+}
+
 export interface RigProject {
   id: string;
   name: string;
   vesselName: string;
+  boatType?: string;
   components: RiggingComponent[];
   miscellaneousHardware: MiscHardware[];
+  checklist: ChecklistItem[];
   createdAt: number;
 }
 
@@ -39,6 +47,8 @@ export interface RigSettings {
   componentTypes: string[];
   terminationTypes: string[];
   materialTypes: string[];
+  productionBoats: string[];
+  defaultChecklist: string[];
 }
 
 const STORAGE_KEY = 'rig_survey_projects';
@@ -83,6 +93,27 @@ const DEFAULT_SETTINGS: RigSettings = {
     "Dyneema SK78",
     "Dyneema SK99",
     "Rod Rigging"
+  ],
+  productionBoats: [
+    "Beneteau Oceanis 45",
+    "Catalina 30",
+    "Jeanneau Sun Odyssey 410",
+    "Hanse 458",
+    "Bavaria C45",
+    "Hunter 33",
+    "Island Packet 38",
+    "Hallberg-Rassy 40C",
+    "Lagoon 42",
+    "Leopard 45"
+  ],
+  defaultChecklist: [
+    "Measure Forestay Length",
+    "Check Backstay Terminals",
+    "Verify Cap Shroud Pin Sizes",
+    "Document Lower Shroud Terminations",
+    "Inspect Spreader Ends",
+    "Measure Halyard Exit Heights",
+    "Check Chainplate Condition"
   ]
 };
 
@@ -119,9 +150,11 @@ export const getSettings = (): RigSettings => {
   if (!stored) return DEFAULT_SETTINGS;
   
   const parsed = JSON.parse(stored);
-  if (!parsed.materialTypes) {
-    parsed.materialTypes = DEFAULT_SETTINGS.materialTypes;
-  }
+  // Ensure new fields exist for backward compatibility
+  if (!parsed.materialTypes) parsed.materialTypes = DEFAULT_SETTINGS.materialTypes;
+  if (!parsed.productionBoats) parsed.productionBoats = DEFAULT_SETTINGS.productionBoats;
+  if (!parsed.defaultChecklist) parsed.defaultChecklist = DEFAULT_SETTINGS.defaultChecklist;
+  
   return parsed;
 };
 
