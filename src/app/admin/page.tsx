@@ -12,14 +12,21 @@ import {
   Trash2, 
   Settings2, 
   Package, 
-  Anchor, 
-  Layers, 
   Ship, 
   ClipboardList,
   Wrench,
-  Dna
+  Dna,
+  ListTodo,
+  X
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function AdminPage() {
   const [settings, setSettings] = useState<RigSettings | null>(null);
@@ -28,6 +35,9 @@ export default function AdminPage() {
   const [newMaterialType, setNewMaterialType] = useState("");
   const [newBoatType, setNewBoatType] = useState("");
   const [newChecklistItem, setNewChecklistItem] = useState("");
+  
+  const [selectedBoatForChecklist, setSelectedBoatForChecklist] = useState<string | null>(null);
+  const [newBoatSpecificItem, setNewBoatSpecificItem] = useState("");
 
   useEffect(() => {
     setSettings(getSettings());
@@ -99,6 +109,34 @@ export default function AdminPage() {
     toast({ title: "Removed", description: `${value} removed.` });
   };
 
+  const handleAddBoatSpecificItem = () => {
+    if (!selectedBoatForChecklist || !newBoatSpecificItem.trim()) return;
+    const currentMap = settings.boatSpecificChecklists || {};
+    const boatList = currentMap[selectedBoatForChecklist] || [];
+    
+    updateSettings({
+      ...settings,
+      boatSpecificChecklists: {
+        ...currentMap,
+        [selectedBoatForChecklist]: [...boatList, newBoatSpecificItem.trim()]
+      }
+    });
+    setNewBoatSpecificItem("");
+  };
+
+  const handleDeleteBoatSpecificItem = (boat: string, item: string) => {
+    const currentMap = settings.boatSpecificChecklists || {};
+    const boatList = currentMap[boat] || [];
+    
+    updateSettings({
+      ...settings,
+      boatSpecificChecklists: {
+        ...currentMap,
+        [boat]: boatList.filter(i => i !== item)
+      }
+    });
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <header className="mb-12 flex justify-between items-center">
@@ -126,7 +164,7 @@ export default function AdminPage() {
               <Ship className="w-5 h-5 text-accent" />
               Boat Types (Production)
             </CardTitle>
-            <CardDescription>Vessel models for quick survey setup.</CardDescription>
+            <CardDescription>Vessel models and specific extra checklist items.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex gap-2">
@@ -144,14 +182,24 @@ export default function AdminPage() {
               {settings.productionBoats.map((type) => (
                 <div key={type} className="flex justify-between items-center p-3 rounded-lg border border-border bg-background/30 group hover:border-accent/50 transition-colors">
                   <span className="text-sm">{type}</span>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
-                    onClick={() => handleDeleteItem('productionBoats', type)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="text-muted-foreground hover:text-accent"
+                      onClick={() => setSelectedBoatForChecklist(type)}
+                    >
+                      <ListTodo className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
+                      onClick={() => handleDeleteItem('productionBoats', type)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -265,7 +313,7 @@ export default function AdminPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ClipboardList className="w-5 h-5 text-accent" />
-              Default Checklist
+              Global Checklist
             </CardTitle>
             <CardDescription>Tasks added to every new survey.</CardDescription>
           </CardHeader>
@@ -299,6 +347,56 @@ export default function AdminPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={!!selectedBoatForChecklist} onOpenChange={(open) => !open && setSelectedBoatForChecklist(null)}>
+        <DialogContent className="nautical-gradient border-border text-foreground">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ListTodo className="w-5 h-5 text-accent" />
+              Specific Tasks: {selectedBoatForChecklist}
+            </DialogTitle>
+            <DialogDescription>
+              Configure extra checklist items specifically for this vessel type.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 mt-4">
+            <div className="flex gap-2">
+              <Input 
+                placeholder="Vessel specific task..." 
+                value={newBoatSpecificItem}
+                onChange={(e) => setNewBoatSpecificItem(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddBoatSpecificItem()}
+                className="bg-background/50"
+              />
+              <Button onClick={handleAddBoatSpecificItem} className="bg-accent text-background">
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
+
+            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
+              {selectedBoatForChecklist && (settings.boatSpecificChecklists?.[selectedBoatForChecklist] || []).length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8 italic border border-dashed rounded-lg">
+                  No boat-specific items added yet.
+                </p>
+              ) : (
+                selectedBoatForChecklist && (settings.boatSpecificChecklists?.[selectedBoatForChecklist] || []).map((item) => (
+                  <div key={item} className="flex justify-between items-center p-3 rounded-lg border border-border bg-background/30 group hover:border-accent/50 transition-colors">
+                    <span className="text-sm">{item}</span>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => handleDeleteBoatSpecificItem(selectedBoatForChecklist, item)}
+                    >
+                      <X className="w-4 h-4 text-muted-foreground hover:text-destructive" />
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

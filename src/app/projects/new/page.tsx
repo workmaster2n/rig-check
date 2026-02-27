@@ -28,8 +28,16 @@ export default function NewProject() {
 
     const id = Math.random().toString(36).substr(2, 9);
     
-    // Initialize checklist from settings
-    const checklist = settings.defaultChecklist.map(task => ({
+    // Start with global default checklist
+    const tasks = [...settings.defaultChecklist];
+    
+    // Add boat-specific items if they exist
+    if (boatType && settings.boatSpecificChecklists?.[boatType]) {
+      tasks.push(...settings.boatSpecificChecklists[boatType]);
+    }
+
+    // Initialize checklist items with unique IDs
+    const checklist = tasks.map(task => ({
       id: Math.random().toString(36).substr(2, 9),
       task
     }));

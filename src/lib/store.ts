@@ -48,6 +48,7 @@ export interface RigSettings {
   terminationTypes: string[];
   materialTypes: string[];
   productionBoats: string[];
+  boatSpecificChecklists?: Record<string, string[]>;
   defaultChecklist: string[];
 }
 
@@ -106,6 +107,7 @@ const DEFAULT_SETTINGS: RigSettings = {
     "Lagoon 42",
     "Leopard 45"
   ],
+  boatSpecificChecklists: {},
   defaultChecklist: [
     "Measure Forestay Length",
     "Check Backstay Terminals",
@@ -154,6 +156,7 @@ export const getSettings = (): RigSettings => {
   if (!parsed.materialTypes) parsed.materialTypes = DEFAULT_SETTINGS.materialTypes;
   if (!parsed.productionBoats) parsed.productionBoats = DEFAULT_SETTINGS.productionBoats;
   if (!parsed.defaultChecklist) parsed.defaultChecklist = DEFAULT_SETTINGS.defaultChecklist;
+  if (!parsed.boatSpecificChecklists) parsed.boatSpecificChecklists = {};
   
   return parsed;
 };
