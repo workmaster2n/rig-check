@@ -6,7 +6,19 @@ import { getSettings, saveSettings, RigSettings } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, Plus, Trash2, Settings2, Package, Anchor, Layers, Ship, ClipboardList } from "lucide-react";
+import { 
+  ChevronLeft, 
+  Plus, 
+  Trash2, 
+  Settings2, 
+  Package, 
+  Anchor, 
+  Layers, 
+  Ship, 
+  ClipboardList,
+  Wrench,
+  Dna
+} from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 export default function AdminPage() {
@@ -112,9 +124,9 @@ export default function AdminPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Ship className="w-5 h-5 text-accent" />
-              Production Boats
+              Boat Types (Production)
             </CardTitle>
-            <CardDescription>Manage the list of searchable vessel types.</CardDescription>
+            <CardDescription>Vessel models for quick survey setup.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex gap-2">
@@ -146,45 +158,6 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
-        {/* Checklist Templates */}
-        <Card className="nautical-gradient border-border">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ClipboardList className="w-5 h-5 text-primary" />
-              Default Checklist
-            </CardTitle>
-            <CardDescription>Items automatically added to new surveys.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex gap-2">
-              <Input 
-                placeholder="New task..." 
-                value={newChecklistItem}
-                onChange={(e) => setNewChecklistItem(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAddChecklistItem()}
-              />
-              <Button onClick={handleAddChecklistItem} className="bg-primary">
-                <Plus className="w-4 h-4" />
-              </Button>
-            </div>
-            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-              {settings.defaultChecklist.map((item) => (
-                <div key={item} className="flex justify-between items-center p-3 rounded-lg border border-border bg-background/30 group hover:border-primary/50 transition-colors">
-                  <span className="text-sm">{item}</span>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
-                    onClick={() => handleDeleteItem('defaultChecklist', item)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Component Types */}
         <Card className="nautical-gradient border-border">
           <CardHeader>
@@ -200,6 +173,7 @@ export default function AdminPage() {
                 placeholder="New type..." 
                 value={newComponentType}
                 onChange={(e) => setNewComponentType(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddComponentType()}
               />
               <Button onClick={handleAddComponentType} className="bg-primary">
                 <Plus className="w-4 h-4" />
@@ -207,9 +181,116 @@ export default function AdminPage() {
             </div>
             <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
               {settings.componentTypes.map((type) => (
-                <div key={type} className="flex justify-between items-center p-3 rounded-lg border border-border bg-background/30 group hover:border-primary/50">
+                <div key={type} className="flex justify-between items-center p-3 rounded-lg border border-border bg-background/30 group hover:border-primary/50 transition-colors">
                   <span className="text-sm">{type}</span>
-                  <Button variant="ghost" size="icon" onClick={() => handleDeleteItem('componentTypes', type)}>
+                  <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100" onClick={() => handleDeleteItem('componentTypes', type)}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Termination Types */}
+        <Card className="nautical-gradient border-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Wrench className="w-5 h-5 text-accent" />
+              Termination Types
+            </CardTitle>
+            <CardDescription>End fittings (Swage, T-Ball, etc).</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex gap-2">
+              <Input 
+                placeholder="New termination..." 
+                value={newTerminationType}
+                onChange={(e) => setNewTerminationType(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddTerminationType()}
+              />
+              <Button onClick={handleAddTerminationType} className="bg-accent text-background">
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+              {settings.terminationTypes.map((type) => (
+                <div key={type} className="flex justify-between items-center p-3 rounded-lg border border-border bg-background/30 group hover:border-accent/50 transition-colors">
+                  <span className="text-sm">{type}</span>
+                  <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100" onClick={() => handleDeleteItem('terminationTypes', type)}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Material Types */}
+        <Card className="nautical-gradient border-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Dna className="w-5 h-5 text-primary" />
+              Material Types
+            </CardTitle>
+            <CardDescription>Wire types and fiber materials.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex gap-2">
+              <Input 
+                placeholder="New material..." 
+                value={newMaterialType}
+                onChange={(e) => setNewMaterialType(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddMaterialType()}
+              />
+              <Button onClick={handleAddMaterialType} className="bg-primary">
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+              {(settings.materialTypes || []).map((type) => (
+                <div key={type} className="flex justify-between items-center p-3 rounded-lg border border-border bg-background/30 group hover:border-primary/50 transition-colors">
+                  <span className="text-sm">{type}</span>
+                  <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100" onClick={() => handleDeleteItem('materialTypes', type)}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Checklist Templates */}
+        <Card className="nautical-gradient border-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ClipboardList className="w-5 h-5 text-accent" />
+              Default Checklist
+            </CardTitle>
+            <CardDescription>Tasks added to every new survey.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex gap-2">
+              <Input 
+                placeholder="New task..." 
+                value={newChecklistItem}
+                onChange={(e) => setNewChecklistItem(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddChecklistItem()}
+              />
+              <Button onClick={handleAddChecklistItem} className="bg-accent text-background">
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+              {settings.defaultChecklist.map((item) => (
+                <div key={item} className="flex justify-between items-center p-3 rounded-lg border border-border bg-background/30 group hover:border-accent/50 transition-colors">
+                  <span className="text-sm">{item}</span>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
+                    onClick={() => handleDeleteItem('defaultChecklist', item)}
+                  >
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
