@@ -35,8 +35,8 @@ export function RiggingComponentForm({ initialData, onSubmit, onCancel }: Riggin
       material: initialData?.material || "1x19 Stainless Steel",
       upperTermination: initialData?.upperTermination || "",
       lowerTermination: initialData?.lowerTermination || "",
-      pinSizeUpperInMM: initialData?.pinSizeUpperInMM,
-      pinSizeLowerInMM: initialData?.pinSizeLowerInMM,
+      pinSizeUpper: initialData?.pinSizeUpper || "",
+      pinSizeLower: initialData?.pinSizeLower || "",
       notes: initialData?.notes || ""
     }
   });
@@ -154,12 +154,12 @@ export function RiggingComponentForm({ initialData, onSubmit, onCancel }: Riggin
             />
             <FormField
               control={form.control}
-              name="pinSizeUpperInMM"
+              name="pinSizeUpper"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Pin Size (mm)</FormLabel>
+                  <FormLabel>Pin Size (mm or fraction)</FormLabel>
                   <FormControl>
-                    <Input type="number" step="0.1" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                    <Input placeholder="e.g. 12mm or 1/2" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -193,12 +193,12 @@ export function RiggingComponentForm({ initialData, onSubmit, onCancel }: Riggin
             />
             <FormField
               control={form.control}
-              name="pinSizeLowerInMM"
+              name="pinSizeLower"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Pin Size (mm)</FormLabel>
+                  <FormLabel>Pin Size (mm or fraction)</FormLabel>
                   <FormControl>
-                    <Input type="number" step="0.1" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                    <Input placeholder="e.g. 12mm or 1/2" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

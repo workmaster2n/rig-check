@@ -9,8 +9,8 @@ export const RiggingComponentSchema = z.object({
   material: z.string().optional(),
   upperTermination: z.string().optional(),
   lowerTermination: z.string().optional(),
-  pinSizeUpperInMM: z.number().positive().optional(),
-  pinSizeLowerInMM: z.number().positive().optional(),
+  pinSizeUpper: z.string().optional(),
+  pinSizeLower: z.string().optional(),
   notes: z.string().optional(),
 });
 

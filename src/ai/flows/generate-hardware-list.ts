@@ -23,8 +23,8 @@ const RiggingComponentSchema = z.object({
   material: z.string().optional().describe('Material of the component (e.g., "1x19 stainless steel", "Dyneema", "polyester")'),
   upperTermination: z.string().optional().describe('Type of termination at the upper end (e.g., "swage stud", "toggle fork", "thimble")'),
   lowerTermination: z.string().optional().describe('Type of termination at the lower end (e.g., "t-ball", "eye", "turnbuckle body")'),
-  pinSizeUpperInMM: z.number().positive().optional().describe('Pin size in millimeters for upper termination, if applicable'),
-  pinSizeLowerInMM: z.number().positive().optional().describe('Pin size in millimeters for lower termination, if applicable'),
+  pinSizeUpper: z.string().optional().describe('Pin size for upper termination (e.g., "12mm", "1/2 inch", "5/8")'),
+  pinSizeLower: z.string().optional().describe('Pin size for lower termination (e.g., "12mm", "1/2 inch", "5/8")'),
   notes: z.string().optional().describe('Any additional notes or specific details for this component'),
 });
 
@@ -84,9 +84,9 @@ Below is the detailed list of rigging components for the survey:
   {{#if diameterInMM}}Diameter: {{{diameterInMM}}}mm{{/if}}
   {{#if material}}Material: {{{material}}}{{/if}}
   {{#if upperTermination}}Upper Termination: {{{upperTermination}}}{{/if}}
-  {{#if pinSizeUpperInMM}}Pin Size Upper: {{{pinSizeUpperInMM}}}mm{{/if}}
+  {{#if pinSizeUpper}}Pin Size Upper: {{{pinSizeUpper}}}{{/if}}
   {{#if lowerTermination}}Lower Termination: {{{lowerTermination}}}{{/if}}
-  {{#if pinSizeLowerInMM}}Pin Size Lower: {{{pinSizeLowerInMM}}}mm{{/if}}
+  {{#if pinSizeLower}}Pin Size Lower: {{{pinSizeLower}}}{{/if}}
   {{#if notes}}Notes: {{{notes}}}{{/if}}
 {{/each}}
 
@@ -102,11 +102,11 @@ Additionally, the following miscellaneous hardware items were noted:
 Based on the above information, generate a comprehensive hardware list in JSON format. For each item in the hardware list:
 1.  Provide the 'itemName' (e.g., "Swage Stud", "Turnbuckle Body", "Shackle").
 2.  Specify the 'quantity' required.
-3.  Provide detailed 'specifications' (e.g., "for 8mm wire", "M12 thread", "316 SS", "Pin size 10mm", "Open body").
+3.  Provide detailed 'specifications' (e.g., "for 8mm wire", "M12 thread", "316 SS", "Pin size 10mm", "Open body"). Note that pin sizes may be in millimeters (e.g., 12mm) or fractions of an inch (e.g., 1/2).
 4.  Suggest a 'suggestedReplacementPart' name or type.
 5.  Add any relevant 'notes' for ordering or installation.
 
-Ensure that the output strictly adheres to the requested schema.
+Ensure that the output strictly adheres to the 'GenerateHardwareListOutputSchema'.
 Consider all termination types, wire diameters, pin sizes, and material specifications when determining the required hardware (e.g., swage fittings, turnbuckles, toggles, thimbles, shackles, pins, mast tangs, chainplates).
 Pay close attention to quantities, ensuring all components have their necessary fittings.
 
@@ -124,7 +124,7 @@ Example of expected output structure:
     {
       "itemName": "Toggle Fork",
       "quantity": 2,
-      "specifications": "M12 RH thread, Pin size 10mm, 316 SS",
+      "specifications": "M12 RH thread, Pin size 1/2 inch, 316 SS",
       "suggestedReplacementPart": "Blue Wave Toggle Fork",
       "notes": "Lower termination for main shrouds"
     }

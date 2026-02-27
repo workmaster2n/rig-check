@@ -169,12 +169,12 @@ export default function ProjectDetail() {
                               <div className="p-2 rounded bg-background/50">
                                 <span className="block text-muted-foreground uppercase mb-1 font-bold tracking-tighter">Upper</span>
                                 <p className="font-medium truncate">{comp.upperTermination || "Not specified"}</p>
-                                {comp.pinSizeUpperInMM && <p className="text-accent">Pin: {comp.pinSizeUpperInMM}mm</p>}
+                                {comp.pinSizeUpper && <p className="text-accent">Pin: {comp.pinSizeUpper}</p>}
                               </div>
                               <div className="p-2 rounded bg-background/50">
                                 <span className="block text-muted-foreground uppercase mb-1 font-bold tracking-tighter">Lower</span>
                                 <p className="font-medium truncate">{comp.lowerTermination || "Not specified"}</p>
-                                {comp.pinSizeLowerInMM && <p className="text-accent">Pin: {comp.pinSizeLowerInMM}mm</p>}
+                                {comp.pinSizeLower && <p className="text-accent">Pin: {comp.pinSizeLower}</p>}
                               </div>
                             </div>
                           </CardContent>
