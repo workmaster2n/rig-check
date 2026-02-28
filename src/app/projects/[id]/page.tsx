@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -43,7 +44,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
-import { generateRiggingEmail } from "@/ai/flows/email-rigging-spec-flow";
+import { sendRiggingEmail } from "@/ai/flows/email-rigging-spec-flow";
 
 export default function ProjectDetail() {
   const { id } = useParams();
@@ -111,7 +112,7 @@ export default function ProjectDetail() {
     const misc: MiscHardware = {
       id: Math.random().toString(36).substr(2, 9),
       item: newMisc.item,
-      quantity: newMisc.quantity
+      quantity: newMisc.quantity || 1
     };
     const miscellaneousHardware = [...(project.miscellaneousHardware || []), misc];
     updateDocumentNonBlocking(projectRef, { miscellaneousHardware, updatedAt: new Date().toISOString() });
@@ -195,7 +196,7 @@ export default function ProjectDetail() {
     if (!recipientEmail) return;
     setIsSending(true);
     try {
-      const result = await generateRiggingEmail({
+      await sendRiggingEmail({
         projectName: project.projectName,
         vesselName: project.vesselName,
         boatType: project.boatType,
@@ -209,24 +210,17 @@ export default function ProjectDetail() {
         }
       });
       
-      // Construct mailto URL to actually "send" from the user's device
-      const subject = encodeURIComponent(result.subject);
-      const body = encodeURIComponent(result.body);
-      const mailtoUrl = `mailto:${recipientEmail}?subject=${subject}&body=${body}`;
-      
-      window.location.href = mailtoUrl;
-
       toast({
-        title: "Email Prepared",
-        description: `Professional specification for ${project.vesselName} has been generated. Your mail client should open automatically.`,
+        title: "Email Sent Successfully",
+        description: `Professional specification for ${project.vesselName} has been dispatched via Mailgun to ${recipientEmail}.`,
       });
       setIsEmailDialogOpen(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Email error:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to generate rigging specification email.",
+        title: "Dispatch Failed",
+        description: error.message || "Failed to send rigging specification email via Mailgun. Check your API settings.",
       });
     } finally {
       setIsSending(false);
@@ -434,7 +428,7 @@ export default function ProjectDetail() {
                       <Label>Qty</Label>
                       <Input 
                         type="number" 
-                        value={newMisc.quantity === null || newMisc.quantity === undefined || isNaN(newMisc.quantity) ? "" : newMisc.quantity} 
+                        value={newMisc.quantity ?? 1} 
                         onChange={(e) => {
                           const val = parseInt(e.target.value);
                           setNewMisc({...newMisc, quantity: isNaN(val) ? 0 : val});
@@ -535,7 +529,7 @@ export default function ProjectDetail() {
           <DialogHeader>
             <DialogTitle>Email Rigging Specification</DialogTitle>
             <DialogDescription>
-              Generate and send a professional bill of materials and component list.
+              Generate and send a professional bill of materials and component list using Mailgun.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -563,7 +557,7 @@ export default function ProjectDetail() {
               className="bg-accent text-background font-bold gap-2"
             >
               {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              Generate & Send
+              Dispatch Specification
             </Button>
           </DialogFooter>
         </DialogContent>

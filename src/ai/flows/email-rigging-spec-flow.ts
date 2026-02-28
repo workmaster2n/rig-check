@@ -1,14 +1,24 @@
+
 'use server';
 /**
- * @fileOverview A flow to generate a professional rigging specification email.
+ * @fileOverview A flow to generate and send professional rigging specification emails via Mailgun.
  *
  * - generateRiggingEmail - Formats the project data into a professional report.
+ * - sendRiggingEmail - Generates the report and sends it via Mailgun.
  * - RiggingEmailInput - Input schema containing project details.
  * - RiggingEmailOutput - Output schema containing the formatted email body.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import formData from 'form-data';
+import Mailgun from 'mailgun.js';
+
+const mailgun = new Mailgun(formData);
+const mg = mailgun.client({
+  username: 'api',
+  key: 'f26e7e1a88bfb3a3df8612e74500ed14-58d4d6a2-d3ca690e',
+});
 
 const RiggingEmailInputSchema = z.object({
   projectName: z.string(),
@@ -35,7 +45,7 @@ export type RiggingEmailOutput = z.infer<typeof RiggingEmailOutputSchema>;
 
 const prompt = ai.definePrompt({
   name: 'generateRiggingEmailPrompt',
-  model: 'googleai/gemini-2.5-flash',
+  model: 'googleai/gemini-1.5-flash',
   input: { schema: RiggingEmailInputSchema },
   output: { schema: RiggingEmailOutputSchema },
   prompt: `You are a professional marine rigger assistant. Format a comprehensive and professional rigging specification report for a client.
@@ -83,4 +93,24 @@ export async function generateRiggingEmail(input: RiggingEmailInput): Promise<Ri
   const { output } = await prompt(input);
   if (!output) throw new Error('Failed to generate email content');
   return output;
+}
+
+export async function sendRiggingEmail(input: RiggingEmailInput) {
+  const result = await generateRiggingEmail(input);
+  
+  // You must set your verified Mailgun domain in the project environment.
+  const domain = process.env.MAILGUN_DOMAIN || 'sandbox-placeholder.mailgun.org';
+  
+  try {
+    await mg.messages.create(domain, {
+      from: `RigSurvey <postmaster@${domain}>`,
+      to: [input.recipientEmail],
+      subject: result.subject,
+      text: result.body,
+    });
+    return { success: true };
+  } catch (error: any) {
+    console.error('Mailgun sending failed:', error);
+    throw new Error(error.message || 'Failed to dispatch email via Mailgun');
+  }
 }
