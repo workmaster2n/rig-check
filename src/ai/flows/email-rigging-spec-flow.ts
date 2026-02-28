@@ -1,10 +1,10 @@
 'use server';
 /**
- * @fileOverview A flow to generate and send professional rigging specification emails via Mailgun.
+ * @fileOverview A flow to generate and send professional rigging specification emails via Mailgun, including inline photos.
  *
- * - generateRiggingEmail - Formats the project data into a professional HTML report.
- * - sendRiggingEmail - Generates the report and sends it via Mailgun.
- * - RiggingEmailInput - Input schema containing project details.
+ * - generateRiggingEmail - Formats the project data into a professional HTML report with CID image references.
+ * - sendRiggingEmail - Generates the report and sends it via Mailgun with inline image attachments.
+ * - RiggingEmailInput - Input schema containing project details and base64 photos.
  * - RiggingEmailOutput - Output schema containing formatted HTML and text content.
  */
 
@@ -26,6 +26,7 @@ const RiggingEmailInputSchema = z.object({
   recipientEmail: z.string(),
   components: z.array(z.any()),
   miscellaneousHardware: z.array(z.any()),
+  photos: z.array(z.string()).optional(), // Base64 Data URIs
   pickList: z.object({
     wire: z.array(z.any()),
     fittings: z.array(z.any()),
@@ -37,8 +38,8 @@ export type RiggingEmailInput = z.infer<typeof RiggingEmailInputSchema>;
 
 const RiggingEmailOutputSchema = z.object({
   subject: z.string(),
-  html: z.string().describe('A complete, self-contained HTML document for the email body with inline CSS for styling.'),
-  text: z.string().describe('A plain text version of the report for fallback.'),
+  html: z.string().describe('A complete, self-contained HTML document for the email body with inline CSS. Use <img src="cid:photo_0" /> for the first photo, etc.'),
+  text: z.string().describe('A plain text version of the report.'),
 });
 
 export type RiggingEmailOutput = z.infer<typeof RiggingEmailOutputSchema>;
@@ -57,9 +58,8 @@ Generate a beautifully formatted HTML email body using inline CSS. The layout sh
 2. An "Inventory" section using a table for rigging components.
 3. A "Bill of Materials" (Pick List) section with clear sub-tables for Wire, Fittings, and Pins.
 4. A "Miscellaneous Hardware" section.
-5. A professional footer with a summary.
-
-Also provide a concise plain text fallback.
+5. An "Image Gallery" section if photos are provided. Use <img> tags with src="cid:photo_X" where X is the index of the photo (e.g. photo_0, photo_1). Make the images a reasonable size (max-width: 400px).
+6. A professional footer.
 
 Data for the report:
 Components: 
@@ -85,7 +85,9 @@ Pick List (Pins):
 Miscellaneous Hardware:
 {{#each miscellaneousHardware}}
 - {{item}}: {{quantity}}x
-{{/each}}`,
+{{/each}}
+
+Photos: {{#if photos}}There are {{photos.length}} photos provided as CID attachments.{{else}}No photos provided.{{/if}}`,
 });
 
 export async function generateRiggingEmail(input: RiggingEmailInput): Promise<RiggingEmailOutput> {
@@ -101,6 +103,25 @@ export async function sendRiggingEmail(input: RiggingEmailInput) {
   if (!domain) {
     throw new Error('MAILGUN_DOMAIN environment variable is not set in .env');
   }
+
+  // Prepare inline images for Mailgun
+  const inlineImages = (input.photos || []).map((dataUri, index) => {
+    try {
+      const [header, base64] = dataUri.split(',');
+      const mimeMatch = header.match(/data:(.*?);/);
+      const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+      
+      return {
+        data: Buffer.from(base64, 'base64'),
+        filename: `photo_${index}.jpg`,
+        contentType: mimeType,
+        contentId: `photo_${index}`
+      };
+    } catch (e) {
+      console.error(`Failed to process photo at index ${index}`, e);
+      return null;
+    }
+  }).filter(Boolean);
   
   try {
     await mg.messages.create(domain, {
@@ -109,6 +130,7 @@ export async function sendRiggingEmail(input: RiggingEmailInput) {
       subject: result.subject,
       text: result.text,
       html: result.html,
+      inline: inlineImages as any,
     });
     return { success: true };
   } catch (error: any) {

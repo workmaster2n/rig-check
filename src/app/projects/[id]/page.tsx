@@ -56,7 +56,6 @@ export default function ProjectDetail() {
   const [newMisc, setNewMisc] = useState({ item: "", quantity: 1 });
   const [newCheckItem, setNewCheckItem] = useState("");
   
-  // Email dialog state
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [recipientEmail, setRecipientEmail] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -151,7 +150,6 @@ export default function ProjectDetail() {
 
   const totalLengthMeters = (project.components || []).reduce((acc, c) => acc + parseLengthInMeters(c.length) * c.quantity, 0);
 
-  // Pick List Aggregation Logic
   const wireTotals: Record<string, { material: string; diameter: string; length: number }> = {};
   const fittingTotals: Record<string, { type: string; pinSize: string; diameter: string; quantity: number }> = {};
   const pinTotals: Record<string, { size: string; quantity: number }> = {};
@@ -194,6 +192,15 @@ export default function ProjectDetail() {
   const handleSendEmail = async () => {
     if (!recipientEmail) return;
     setIsSending(true);
+
+    // Collect all photos from all components
+    const allPhotos: string[] = [];
+    (project.components || []).forEach((comp: any) => {
+      if (comp.photos && Array.isArray(comp.photos)) {
+        allPhotos.push(...comp.photos);
+      }
+    });
+
     try {
       await sendRiggingEmail({
         projectName: project.projectName,
@@ -202,6 +209,7 @@ export default function ProjectDetail() {
         recipientEmail: recipientEmail,
         components: project.components || [],
         miscellaneousHardware: project.miscellaneousHardware || [],
+        photos: allPhotos,
         pickList: {
           wire: Object.values(wireTotals),
           fittings: Object.values(fittingTotals),
@@ -211,7 +219,7 @@ export default function ProjectDetail() {
       
       toast({
         title: "Email Sent Successfully",
-        description: `Professional specification for ${project.vesselName} has been dispatched to ${recipientEmail}.`,
+        description: `Professional specification for ${project.vesselName} (with ${allPhotos.length} photos) has been dispatched to ${recipientEmail}.`,
       });
       setIsEmailDialogOpen(false);
     } catch (error: any) {
@@ -348,6 +356,15 @@ export default function ProjectDetail() {
                                 {comp.pinSizeLower && <p className="text-accent">Pin: {comp.pinSizeLower}</p>}
                               </div>
                             </div>
+                            {comp.photos && comp.photos.length > 0 && (
+                              <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
+                                {comp.photos.map((photo, i) => (
+                                  <div key={i} className="flex-shrink-0 w-16 h-16 rounded border border-border overflow-hidden">
+                                    <img src={photo} alt="Rigging photo" className="w-full h-full object-cover" />
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </CardContent>
                         </Card>
                       ))}
@@ -528,7 +545,7 @@ export default function ProjectDetail() {
           <DialogHeader>
             <DialogTitle>Email Rigging Specification</DialogTitle>
             <DialogDescription>
-              Generate and send a professional bill of materials and component list using Mailgun.
+              Generate and send a professional report with inline photos using Mailgun and Gemini 2.5 Flash.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
