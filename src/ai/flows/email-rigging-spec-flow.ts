@@ -61,7 +61,7 @@ Generate a beautifully formatted HTML email body using inline CSS. The layout sh
 2. An "Inventory" section using a table for rigging components.
 3. A "Bill of Materials" (Pick List) section with clear sub-tables for Wire, Fittings, and Pins.
 4. A "Miscellaneous Hardware" section.
-5. An "Image Gallery" section if photos are provided. For each photo, include its label (component name) and the image using <img src="cid:photo_X" width="400" style="display:block; margin-top:10px; border:1px solid #ccc;" /> where X is the index (0, 1, 2...).
+5. An "Image Gallery" section if photos are provided. For each photo, include its label (component name) and the image using <img src="cid:photo_{{@index}}" width="400" style="display:block; margin-top:10px; border:1px solid #ccc;" /> where {{@index}} is the unique index of the photo in the list.
 
 Data for the report:
 Components: 
@@ -69,7 +69,7 @@ Components:
 - {{type}}: L: {{length}}, D: {{diameter}}, Material: {{material}}. Upper: {{upperTermination}} (Pin: {{pinSizeUpper}}), Lower: {{lowerTermination}} (Pin: {{pinSizeLower}}).
 {{/each}}
 
-Photos Mapping (Use these exactly for CIDs):
+Photos Mapping (Use these EXACTLY for CIDs):
 {{#each photos}}
 - Photo Index {{@index}}: Component "{{componentName}}" -> Use <img src="cid:photo_{{@index}}" />
 {{/each}}
@@ -123,7 +123,7 @@ export async function sendRiggingEmail(input: RiggingEmailInput) {
         data: Buffer.from(base64, 'base64'),
         filename: `photo_${index}.jpg`,
         contentType: mimeType,
-        cid: `photo_${index}` // Critical for CID mapping in HTML
+        cid: `photo_${index}` // Critical: This must match the src="cid:photo_X" in the HTML
       };
     } catch (e) {
       console.error(`Failed to process photo at index ${index}`, e);

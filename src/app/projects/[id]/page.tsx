@@ -109,7 +109,7 @@ export default function ProjectDetail() {
     const misc: MiscHardware = {
       id: Math.random().toString(36).substr(2, 9),
       item: newMisc.item,
-      quantity: newMisc.quantity || 1
+      quantity: isNaN(Number(newMisc.quantity)) ? 1 : Number(newMisc.quantity)
     };
     const miscellaneousHardware = [...(project.miscellaneousHardware || []), misc];
     updateDocumentNonBlocking(projectRef, { miscellaneousHardware, updatedAt: new Date().toISOString() });
@@ -154,7 +154,7 @@ export default function ProjectDetail() {
   const pinTotals: Record<string, { size: string; quantity: number }> = {};
 
   (project.components || []).forEach((comp: any) => {
-    const qty = comp.quantity || 0;
+    const qty = isNaN(Number(comp.quantity)) ? 0 : Number(comp.quantity);
     const dia = comp.diameter || "N/A";
     const mat = comp.material || "N/A";
     const len = parseLengthInMeters(comp.length) * qty;
@@ -192,14 +192,14 @@ export default function ProjectDetail() {
     if (!recipientEmail) return;
     setIsSending(true);
 
-    // Map photos to their component names
+    // Map photos to their component names for the Image Gallery
     const photosWithContext: { dataUri: string; componentName: string }[] = [];
     (project.components || []).forEach((comp: any) => {
       if (comp.photos && Array.isArray(comp.photos)) {
         comp.photos.forEach((photo: string) => {
           photosWithContext.push({
             dataUri: photo,
-            componentName: comp.type || "Unnamed Component"
+            componentName: comp.type || "Rigging Component"
           });
         });
       }
@@ -223,7 +223,7 @@ export default function ProjectDetail() {
       
       toast({
         title: "Email Sent Successfully",
-        description: `Professional specification for ${project.vesselName} with ${photosWithContext.length} attributed photos has been dispatched.`,
+        description: `Professional specification for ${project.vesselName} has been dispatched to ${recipientEmail}.`,
       });
       setIsEmailDialogOpen(false);
     } catch (error: any) {
@@ -448,7 +448,7 @@ export default function ProjectDetail() {
                       <Label>Qty</Label>
                       <Input 
                         type="number" 
-                        value={newMisc.quantity ?? 1} 
+                        value={isNaN(newMisc.quantity) ? "0" : String(newMisc.quantity)} 
                         onChange={(e) => {
                           const val = parseInt(e.target.value);
                           setNewMisc({...newMisc, quantity: isNaN(val) ? 0 : val});
