@@ -2,7 +2,7 @@
 /**
  * @fileOverview A flow to generate and send professional rigging specification emails via Mailgun, including labelled inline photos.
  *
- * - generateRiggingEmail - Formats the project data into a professional HTML report with CID image references and labels.
+ * - generateRiggingEmail - Formats the project data into a professional HTML report with component-specific CID image references.
  * - sendRiggingEmail - Generates the report and sends it via Mailgun with inline image attachments named after components.
  * - RiggingEmailInput - Input schema containing project details and objects of base64 photos with component labels.
  * - RiggingEmailOutput - Output schema containing formatted HTML and text content.
@@ -37,11 +37,19 @@ export type RiggingEmailInput = z.infer<typeof RiggingEmailInputSchema>;
 
 const RiggingEmailOutputSchema = z.object({
   subject: z.string(),
-  html: z.string().describe('A complete, self-contained HTML document for the email body with inline CSS. For every photo provided in the input, you MUST include an <img src="cid:photo_X.jpg" /> tag where X is the index.'),
+  html: z.string().describe('A complete, self-contained HTML document for the email body with inline CSS. For every photo provided in the input, you MUST include its specific CID reference.'),
   text: z.string().describe('A plain text version of the report.'),
 });
 
 export type RiggingEmailOutput = z.infer<typeof RiggingEmailOutputSchema>;
+
+/**
+ * Helper to generate a safe, unique CID/filename from a component name and index.
+ */
+function getSafeId(name: string, index: number): string {
+  const safeName = name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+  return `${safeName}_${index}`;
+}
 
 const prompt = ai.definePrompt({
   name: 'generateRiggingEmailPrompt',
@@ -57,17 +65,19 @@ Generate a beautifully formatted HTML email body using inline CSS. The layout sh
 2. An "Inventory" section using a table for rigging components.
 3. A "Bill of Materials" (Pick List) section with clear sub-tables for Wire, Fittings, and Pins.
 4. A "Miscellaneous Hardware" section.
-5. An "Image Gallery" section if photos are provided. For each photo, you MUST include its label (component name) and the image using <img src="cid:photo_{{@index}}.jpg" width="400" style="display:block; margin-top:10px; border:1px solid #ccc;" /> where {{@index}} is the unique index of the photo in the list.
+5. An "Image Gallery" section if photos are provided. 
+
+CRITICAL: For each photo, you MUST display the component name as a label and use the exact CID provided in the mapping below.
+
+Photo Reference Mapping:
+{{#each photos}}
+- Photo for component "{{componentName}}": Use <img src="cid:photo_{{@index}}" width="400" />.
+{{/each}}
 
 Data for the report:
 Components: 
 {{#each components}}
 - {{type}}: L: {{length}}, D: {{diameter}}, Material: {{material}}. Upper: {{upperTermination}} (Pin: {{pinSizeUpper}}), Lower: {{lowerTermination}} (Pin: {{pinSizeLower}}).
-{{/each}}
-
-Photos Mapping:
-{{#each photos}}
-- Photo Index {{@index}}: Component "{{componentName}}" -> Ensure you use <img src="cid:photo_{{@index}}.jpg" /> in the Image Gallery.
 {{/each}}
 
 Pick List (Wire):
@@ -112,7 +122,7 @@ export async function sendRiggingEmail(input: RiggingEmailInput) {
     key: apiKey,
   });
 
-  // Prepare inline images for Mailgun
+  // Prepare inline images for Mailgun with descriptive filenames
   const inlineImages = (input.photos || []).map((photoObj, index) => {
     try {
       const parts = photoObj.dataUri.split(',');
@@ -122,9 +132,15 @@ export async function sendRiggingEmail(input: RiggingEmailInput) {
       const mimeMatch = header.match(/data:(.*?);/);
       const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
       
+      // Filename for the attachment (descriptive for download)
+      const safeBaseName = (photoObj.componentName || 'photo').replace(/[^a-z0-9]/gi, '_');
+      const filename = `${safeBaseName}_${index}.jpg`;
+      
       return {
         data: Buffer.from(base64, 'base64'),
-        filename: `photo_${index}.jpg`,
+        filename: filename,
+        // The 'cid' matches what the AI was told to use: 'photo_{index}'
+        cid: `photo_${index}`,
         contentType: mimeType,
       };
     } catch (e) {
