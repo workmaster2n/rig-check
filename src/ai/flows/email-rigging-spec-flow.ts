@@ -2,10 +2,10 @@
 /**
  * @fileOverview A flow to generate and send professional rigging specification emails via Mailgun.
  *
- * - generateRiggingEmail - Formats the project data into a professional report.
+ * - generateRiggingEmail - Formats the project data into a professional HTML report.
  * - sendRiggingEmail - Generates the report and sends it via Mailgun.
  * - RiggingEmailInput - Input schema containing project details.
- * - RiggingEmailOutput - Output schema containing the formatted email body.
+ * - RiggingEmailOutput - Output schema containing formatted HTML and text content.
  */
 
 import { ai } from '@/ai/genkit';
@@ -37,7 +37,8 @@ export type RiggingEmailInput = z.infer<typeof RiggingEmailInputSchema>;
 
 const RiggingEmailOutputSchema = z.object({
   subject: z.string(),
-  body: z.string(),
+  html: z.string().describe('A complete, self-contained HTML document for the email body with inline CSS for styling.'),
+  text: z.string().describe('A plain text version of the report for fallback.'),
 });
 
 export type RiggingEmailOutput = z.infer<typeof RiggingEmailOutputSchema>;
@@ -47,21 +48,20 @@ const prompt = ai.definePrompt({
   model: 'googleai/gemini-2.5-flash',
   input: { schema: RiggingEmailInputSchema },
   output: { schema: RiggingEmailOutputSchema },
-  prompt: `You are a professional marine rigger assistant. Format a comprehensive and professional rigging specification report for a client.
-
-The report is for the vessel "{{vesselName}}" ({{#if boatType}}{{boatType}}{{else}}Custom Vessel{{/if}}) regarding the project "{{projectName}}".
+  prompt: `You are a professional marine rigger. Create a comprehensive and visually professional rigging specification report for the vessel "{{vesselName}}" (Project: {{projectName}}).
 
 The email is addressed to: {{recipientEmail}}
 
-Include sections for:
-1. Executive Summary: A professional greeting and overview of the job.
-2. Inventory: Detailed breakdown of each rigging component (shrouds, stays, etc.) including lengths, diameters, and terminations.
-3. Bill of Materials (Pick List): Aggregated hardware requirements (wire totals, specific fitting counts, and pin requirements).
-4. Custom Hardware: Any miscellaneous items recorded.
+Generate a beautifully formatted HTML email body using inline CSS. The layout should include:
+1. A clean header with the vessel name and project title.
+2. An "Inventory" section using a table for rigging components.
+3. A "Bill of Materials" (Pick List) section with clear sub-tables for Wire, Fittings, and Pins.
+4. A "Miscellaneous Hardware" section.
+5. A professional footer with a summary.
 
-Use professional, clear formatting. Ensure the output is concise and readable.
+Also provide a concise plain text fallback.
 
-Data provided:
+Data for the report:
 Components: 
 {{#each components}}
 - {{type}}: L: {{length}}, D: {{diameter}}, Material: {{material}}. Upper: {{upperTermination}} (Pin: {{pinSizeUpper}}), Lower: {{lowerTermination}} (Pin: {{pinSizeLower}}).
@@ -107,7 +107,8 @@ export async function sendRiggingEmail(input: RiggingEmailInput) {
       from: `RigSurvey <postmaster@${domain}>`,
       to: [input.recipientEmail],
       subject: result.subject,
-      text: result.body,
+      text: result.text,
+      html: result.html,
     });
     return { success: true };
   } catch (error: any) {
