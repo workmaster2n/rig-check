@@ -50,7 +50,7 @@ Include sections for:
 3. Bill of Materials (Pick List): Aggregated hardware requirements (wire totals, specific fitting counts, and pin requirements).
 4. Custom Hardware: Any miscellaneous items recorded.
 
-Use professional, clear formatting. Use Markdown-style formatting within the body string.
+Use professional, clear formatting. Ensure the output is concise and readable.
 
 Data provided:
 Components: 

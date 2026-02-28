@@ -195,7 +195,7 @@ export default function ProjectDetail() {
     if (!recipientEmail) return;
     setIsSending(true);
     try {
-      await generateRiggingEmail({
+      const result = await generateRiggingEmail({
         projectName: project.projectName,
         vesselName: project.vesselName,
         boatType: project.boatType,
@@ -209,9 +209,16 @@ export default function ProjectDetail() {
         }
       });
       
+      // Construct mailto URL to actually "send" from the user's device
+      const subject = encodeURIComponent(result.subject);
+      const body = encodeURIComponent(result.body);
+      const mailtoUrl = `mailto:${recipientEmail}?subject=${subject}&body=${body}`;
+      
+      window.location.href = mailtoUrl;
+
       toast({
-        title: "Email Generated",
-        description: `Professional specification for ${project.vesselName} has been prepared and sent to ${recipientEmail}.`,
+        title: "Email Prepared",
+        description: `Professional specification for ${project.vesselName} has been generated. Your mail client should open automatically.`,
       });
       setIsEmailDialogOpen(false);
     } catch (error) {
