@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -212,7 +211,7 @@ export default function ProjectDetail() {
       
       toast({
         title: "Email Sent Successfully",
-        description: `Professional specification for ${project.vesselName} has been dispatched via Mailgun to ${recipientEmail}.`,
+        description: `Professional specification for ${project.vesselName} has been dispatched to ${recipientEmail}.`,
       });
       setIsEmailDialogOpen(false);
     } catch (error: any) {
@@ -220,7 +219,7 @@ export default function ProjectDetail() {
       toast({
         variant: "destructive",
         title: "Dispatch Failed",
-        description: error.message || "Failed to send rigging specification email via Mailgun. Check your API settings.",
+        description: error.message || "Failed to send rigging specification email. Check your settings.",
       });
     } finally {
       setIsSending(false);

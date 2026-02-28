@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview A flow to generate and send professional rigging specification emails via Mailgun.
@@ -45,7 +44,7 @@ export type RiggingEmailOutput = z.infer<typeof RiggingEmailOutputSchema>;
 
 const prompt = ai.definePrompt({
   name: 'generateRiggingEmailPrompt',
-  model: 'googleai/gemini-1.5-flash',
+  model: 'googleai/gemini-2.0-flash',
   input: { schema: RiggingEmailInputSchema },
   output: { schema: RiggingEmailOutputSchema },
   prompt: `You are a professional marine rigger assistant. Format a comprehensive and professional rigging specification report for a client.
@@ -98,8 +97,7 @@ export async function generateRiggingEmail(input: RiggingEmailInput): Promise<Ri
 export async function sendRiggingEmail(input: RiggingEmailInput) {
   const result = await generateRiggingEmail(input);
   
-  // You must set your verified Mailgun domain in the project environment.
-  const domain = process.env.MAILGUN_DOMAIN || 'sandbox-placeholder.mailgun.org';
+  const domain = process.env.MAILGUN_DOMAIN || 'sandbox67677.mailgun.org';
   
   try {
     await mg.messages.create(domain, {
