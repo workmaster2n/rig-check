@@ -14,10 +14,6 @@ import formData from 'form-data';
 import Mailgun from 'mailgun.js';
 
 const mailgun = new Mailgun(formData);
-const mg = mailgun.client({
-  username: 'api',
-  key: process.env.MAILGUN_API_KEY || '',
-});
 
 const RiggingEmailInputSchema = z.object({
   projectName: z.string(),
@@ -41,7 +37,7 @@ export type RiggingEmailInput = z.infer<typeof RiggingEmailInputSchema>;
 
 const RiggingEmailOutputSchema = z.object({
   subject: z.string(),
-  html: z.string().describe('A complete, self-contained HTML document for the email body with inline CSS. For every photo provided in the input, you MUST include an <img src="cid:photo_X" /> tag where X is the index.'),
+  html: z.string().describe('A complete, self-contained HTML document for the email body with inline CSS. For every photo provided in the input, you MUST include an <img src="cid:photo_X.jpg" /> tag where X is the index.'),
   text: z.string().describe('A plain text version of the report.'),
 });
 
@@ -61,7 +57,7 @@ Generate a beautifully formatted HTML email body using inline CSS. The layout sh
 2. An "Inventory" section using a table for rigging components.
 3. A "Bill of Materials" (Pick List) section with clear sub-tables for Wire, Fittings, and Pins.
 4. A "Miscellaneous Hardware" section.
-5. An "Image Gallery" section if photos are provided. For each photo, include its label (component name) and the image using <img src="cid:photo_{{@index}}" width="400" style="display:block; margin-top:10px; border:1px solid #ccc;" /> where {{@index}} is the unique index of the photo in the list.
+5. An "Image Gallery" section if photos are provided. For each photo, include its label (component name) and the image using <img src="cid:photo_{{@index}}.jpg" width="400" style="display:block; margin-top:10px; border:1px solid #ccc;" /> where {{@index}} is the unique index of the photo in the list.
 
 Data for the report:
 Components: 
@@ -71,7 +67,7 @@ Components:
 
 Photos Mapping (Use these EXACTLY for CIDs):
 {{#each photos}}
-- Photo Index {{@index}}: Component "{{componentName}}" -> Use <img src="cid:photo_{{@index}}" />
+- Photo Index {{@index}}: Component "{{componentName}}" -> Use <img src="cid:photo_{{@index}}.jpg" />
 {{/each}}
 
 Pick List (Wire):
@@ -105,11 +101,18 @@ export async function sendRiggingEmail(input: RiggingEmailInput) {
   const result = await generateRiggingEmail(input);
   
   const domain = process.env.MAILGUN_DOMAIN || '';
-  if (!domain) {
-    throw new Error('MAILGUN_DOMAIN environment variable is not set in .env');
+  const apiKey = process.env.MAILGUN_API_KEY || '';
+  
+  if (!domain || !apiKey) {
+    throw new Error('MAILGUN_DOMAIN and MAILGUN_API_KEY environment variables must be set.');
   }
 
-  // Prepare inline images for Mailgun with explicit CID mapping
+  const mg = mailgun.client({
+    username: 'api',
+    key: apiKey,
+  });
+
+  // Prepare inline images for Mailgun
   const inlineImages = (input.photos || []).map((photoObj, index) => {
     try {
       const parts = photoObj.dataUri.split(',');
@@ -123,7 +126,6 @@ export async function sendRiggingEmail(input: RiggingEmailInput) {
         data: Buffer.from(base64, 'base64'),
         filename: `photo_${index}.jpg`,
         contentType: mimeType,
-        cid: `photo_${index}` // Critical: This must match the src="cid:photo_X" in the HTML
       };
     } catch (e) {
       console.error(`Failed to process photo at index ${index}`, e);
