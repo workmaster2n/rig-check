@@ -57,7 +57,7 @@ Generate a beautifully formatted HTML email body using inline CSS. The layout sh
 2. An "Inventory" section using a table for rigging components.
 3. A "Bill of Materials" (Pick List) section with clear sub-tables for Wire, Fittings, and Pins.
 4. A "Miscellaneous Hardware" section.
-5. An "Image Gallery" section if photos are provided. For each photo, include its label (component name) and the image using <img src="cid:photo_{{@index}}.jpg" width="400" style="display:block; margin-top:10px; border:1px solid #ccc;" /> where {{@index}} is the unique index of the photo in the list.
+5. An "Image Gallery" section if photos are provided. For each photo, you MUST include its label (component name) and the image using <img src="cid:photo_{{@index}}.jpg" width="400" style="display:block; margin-top:10px; border:1px solid #ccc;" /> where {{@index}} is the unique index of the photo in the list.
 
 Data for the report:
 Components: 
@@ -65,9 +65,9 @@ Components:
 - {{type}}: L: {{length}}, D: {{diameter}}, Material: {{material}}. Upper: {{upperTermination}} (Pin: {{pinSizeUpper}}), Lower: {{lowerTermination}} (Pin: {{pinSizeLower}}).
 {{/each}}
 
-Photos Mapping (Use these EXACTLY for CIDs):
+Photos Mapping:
 {{#each photos}}
-- Photo Index {{@index}}: Component "{{componentName}}" -> Use <img src="cid:photo_{{@index}}.jpg" />
+- Photo Index {{@index}}: Component "{{componentName}}" -> Ensure you use <img src="cid:photo_{{@index}}.jpg" /> in the Image Gallery.
 {{/each}}
 
 Pick List (Wire):
