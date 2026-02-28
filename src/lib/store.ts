@@ -29,6 +29,7 @@ export type MiscHardware = z.infer<typeof MiscHardwareSchema>;
 export interface ChecklistItem {
   id: string;
   task: string;
+  completed?: boolean;
   componentType?: string;
 }
 

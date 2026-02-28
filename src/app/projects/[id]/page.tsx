@@ -126,11 +126,20 @@ export default function ProjectDetail() {
     if (!newCheckItem.trim() || !projectRef) return;
     const newItem: ChecklistItem = {
       id: Math.random().toString(36).substr(2, 9),
-      task: newCheckItem
+      task: newCheckItem,
+      completed: false
     };
     const checklist = [...(project.checklist || []), newItem];
     updateDocumentNonBlocking(projectRef, { checklist, updatedAt: new Date().toISOString() });
     setNewCheckItem("");
+  };
+
+  const handleToggleChecklistItem = (cid: string) => {
+    if (!projectRef || !project.checklist) return;
+    const checklist = project.checklist.map((item: ChecklistItem) => 
+      item.id === cid ? { ...item, completed: !item.completed } : item
+    );
+    updateDocumentNonBlocking(projectRef, { checklist, updatedAt: new Date().toISOString() });
   };
 
   const handleDeleteChecklistItem = (cid: string) => {
@@ -192,7 +201,6 @@ export default function ProjectDetail() {
     if (!recipientEmail) return;
     setIsSending(true);
 
-    // Map photos to their component names for the Image Gallery
     const photosWithContext: { dataUri: string; componentName: string }[] = [];
     (project.components || []).forEach((comp: any) => {
       if (comp.photos && Array.isArray(comp.photos)) {
@@ -404,19 +412,20 @@ export default function ProjectDetail() {
                       </p>
                     ) : (
                       project.checklist.map((item) => {
-                        const isCompleted = (project.components || []).some(c => 
-                          item.task.toLowerCase().includes(c.type.toLowerCase())
-                        );
-
                         return (
                           <div key={item.id} className="flex justify-between items-center p-4 rounded-lg border border-border bg-background/30 group hover:border-primary/50 transition-all">
                             <div className="flex items-center gap-3">
-                              {isCompleted ? (
-                                <CheckCircle2 className="w-5 h-5 text-accent" />
-                              ) : (
-                                <CheckCircle2 className="w-5 h-5 text-muted-foreground/30" />
-                              )}
-                              <span className={isCompleted ? "text-accent font-medium line-through opacity-70" : "font-medium"}>
+                              <button 
+                                onClick={() => handleToggleChecklistItem(item.id)}
+                                className="focus:outline-none transition-transform hover:scale-110 active:scale-95"
+                              >
+                                {item.completed ? (
+                                  <CheckCircle2 className="w-5 h-5 text-accent" />
+                                ) : (
+                                  <CheckCircle2 className="w-5 h-5 text-muted-foreground/30" />
+                                )}
+                              </button>
+                              <span className={item.completed ? "text-accent font-medium line-through opacity-70" : "font-medium"}>
                                 {item.task}
                               </span>
                             </div>
@@ -532,7 +541,7 @@ export default function ProjectDetail() {
               <div className="space-y-1">
                 <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Progress</p>
                 <p className="text-3xl font-black text-white">
-                  {project.checklist ? Math.round((project.checklist.filter(item => (project.components || []).some(c => item.task.toLowerCase().includes(c.type.toLowerCase()))).length / Math.max(1, project.checklist.length)) * 100) : 0}%
+                  {project.checklist ? Math.round((project.checklist.filter(item => item.completed).length / Math.max(1, project.checklist.length)) * 100) : 0}%
                 </p>
               </div>
               <div className="space-y-1">

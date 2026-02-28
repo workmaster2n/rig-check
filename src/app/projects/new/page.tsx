@@ -50,7 +50,8 @@ export default function NewProject() {
     // Initialize checklist items with unique IDs
     const checklist = tasks.map(task => ({
       id: Math.random().toString(36).substr(2, 9),
-      task
+      task,
+      completed: false
     }));
 
     const projectData = {
