@@ -41,7 +41,7 @@ export type RiggingEmailInput = z.infer<typeof RiggingEmailInputSchema>;
 
 const RiggingEmailOutputSchema = z.object({
   subject: z.string(),
-  html: z.string().describe('A complete, self-contained HTML document for the email body with inline CSS. Use <img src="cid:photo_0" /> for the first photo, etc.'),
+  html: z.string().describe('A complete, self-contained HTML document for the email body with inline CSS. For every photo provided in the input, you MUST include an <img src="cid:photo_X" /> tag where X is the index.'),
   text: z.string().describe('A plain text version of the report.'),
 });
 
@@ -61,7 +61,7 @@ Generate a beautifully formatted HTML email body using inline CSS. The layout sh
 2. An "Inventory" section using a table for rigging components.
 3. A "Bill of Materials" (Pick List) section with clear sub-tables for Wire, Fittings, and Pins.
 4. A "Miscellaneous Hardware" section.
-5. An "Image Gallery" section if photos are provided. For each photo, include its label (component name) and the image using <img src="cid:photo_X" /> where X is the index (e.g. photo_0, photo_1).
+5. An "Image Gallery" section if photos are provided. For each photo, include its label (component name) and the image using <img src="cid:photo_X" width="400" style="display:block; margin-top:10px; border:1px solid #ccc;" /> where X is the index (0, 1, 2...).
 
 Data for the report:
 Components: 
@@ -69,9 +69,9 @@ Components:
 - {{type}}: L: {{length}}, D: {{diameter}}, Material: {{material}}. Upper: {{upperTermination}} (Pin: {{pinSizeUpper}}), Lower: {{lowerTermination}} (Pin: {{pinSizeLower}}).
 {{/each}}
 
-Photos:
+Photos Mapping (Use these exactly for CIDs):
 {{#each photos}}
-- [Photo for {{componentName}}]: References CID photo_{{@index}}
+- Photo Index {{@index}}: Component "{{componentName}}" -> Use <img src="cid:photo_{{@index}}" />
 {{/each}}
 
 Pick List (Wire):
@@ -109,19 +109,21 @@ export async function sendRiggingEmail(input: RiggingEmailInput) {
     throw new Error('MAILGUN_DOMAIN environment variable is not set in .env');
   }
 
-  // Prepare inline images for Mailgun
+  // Prepare inline images for Mailgun with explicit CID mapping
   const inlineImages = (input.photos || []).map((photoObj, index) => {
     try {
-      const [header, base64] = photoObj.dataUri.split(',');
+      const parts = photoObj.dataUri.split(',');
+      if (parts.length < 2) return null;
+      const base64 = parts[1];
+      const header = parts[0];
       const mimeMatch = header.match(/data:(.*?);/);
       const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
-      const safeComponentName = photoObj.componentName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
       
       return {
         data: Buffer.from(base64, 'base64'),
-        filename: `${safeComponentName}_${index}.jpg`,
+        filename: `photo_${index}.jpg`,
         contentType: mimeType,
-        contentId: `photo_${index}`
+        cid: `photo_${index}` // Critical for CID mapping in HTML
       };
     } catch (e) {
       console.error(`Failed to process photo at index ${index}`, e);
