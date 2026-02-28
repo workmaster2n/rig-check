@@ -1,10 +1,10 @@
 'use server';
 /**
- * @fileOverview A flow to generate and send professional rigging specification emails via Mailgun, including inline photos.
+ * @fileOverview A flow to generate and send professional rigging specification emails via Mailgun, including labelled inline photos.
  *
- * - generateRiggingEmail - Formats the project data into a professional HTML report with CID image references.
- * - sendRiggingEmail - Generates the report and sends it via Mailgun with inline image attachments.
- * - RiggingEmailInput - Input schema containing project details and base64 photos.
+ * - generateRiggingEmail - Formats the project data into a professional HTML report with CID image references and labels.
+ * - sendRiggingEmail - Generates the report and sends it via Mailgun with inline image attachments named after components.
+ * - RiggingEmailInput - Input schema containing project details and objects of base64 photos with component labels.
  * - RiggingEmailOutput - Output schema containing formatted HTML and text content.
  */
 
@@ -26,7 +26,10 @@ const RiggingEmailInputSchema = z.object({
   recipientEmail: z.string(),
   components: z.array(z.any()),
   miscellaneousHardware: z.array(z.any()),
-  photos: z.array(z.string()).optional(), // Base64 Data URIs
+  photos: z.array(z.object({
+    dataUri: z.string().describe("Base64 Data URI of the photo"),
+    componentName: z.string().describe("The name of the component this photo belongs to")
+  })).optional(),
   pickList: z.object({
     wire: z.array(z.any()),
     fittings: z.array(z.any()),
@@ -58,13 +61,17 @@ Generate a beautifully formatted HTML email body using inline CSS. The layout sh
 2. An "Inventory" section using a table for rigging components.
 3. A "Bill of Materials" (Pick List) section with clear sub-tables for Wire, Fittings, and Pins.
 4. A "Miscellaneous Hardware" section.
-5. An "Image Gallery" section if photos are provided. Use <img> tags with src="cid:photo_X" where X is the index of the photo (e.g. photo_0, photo_1). Make the images a reasonable size (max-width: 400px).
-6. A professional footer.
+5. An "Image Gallery" section if photos are provided. For each photo, include its label (component name) and the image using <img src="cid:photo_X" /> where X is the index (e.g. photo_0, photo_1).
 
 Data for the report:
 Components: 
 {{#each components}}
 - {{type}}: L: {{length}}, D: {{diameter}}, Material: {{material}}. Upper: {{upperTermination}} (Pin: {{pinSizeUpper}}), Lower: {{lowerTermination}} (Pin: {{pinSizeLower}}).
+{{/each}}
+
+Photos:
+{{#each photos}}
+- [Photo for {{componentName}}]: References CID photo_{{@index}}
 {{/each}}
 
 Pick List (Wire):
@@ -85,9 +92,7 @@ Pick List (Pins):
 Miscellaneous Hardware:
 {{#each miscellaneousHardware}}
 - {{item}}: {{quantity}}x
-{{/each}}
-
-Photos: {{#if photos}}There are {{photos.length}} photos provided as CID attachments.{{else}}No photos provided.{{/if}}`,
+{{/each}}`,
 });
 
 export async function generateRiggingEmail(input: RiggingEmailInput): Promise<RiggingEmailOutput> {
@@ -105,15 +110,16 @@ export async function sendRiggingEmail(input: RiggingEmailInput) {
   }
 
   // Prepare inline images for Mailgun
-  const inlineImages = (input.photos || []).map((dataUri, index) => {
+  const inlineImages = (input.photos || []).map((photoObj, index) => {
     try {
-      const [header, base64] = dataUri.split(',');
+      const [header, base64] = photoObj.dataUri.split(',');
       const mimeMatch = header.match(/data:(.*?);/);
       const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+      const safeComponentName = photoObj.componentName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
       
       return {
         data: Buffer.from(base64, 'base64'),
-        filename: `photo_${index}.jpg`,
+        filename: `${safeComponentName}_${index}.jpg`,
         contentType: mimeType,
         contentId: `photo_${index}`
       };

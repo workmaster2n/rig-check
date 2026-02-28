@@ -22,7 +22,6 @@ import {
   Info,
   ClipboardCheck,
   CheckCircle2,
-  Circle,
   Loader2,
   ClipboardList,
   Layers,
@@ -148,7 +147,7 @@ export default function ProjectDetail() {
     return num;
   };
 
-  const totalLengthMeters = (project.components || []).reduce((acc, c) => acc + parseLengthInMeters(c.length) * c.quantity, 0);
+  const totalLengthMeters = (project.components || []).reduce((acc, c) => acc + parseLengthInMeters(c.length) * (c.quantity || 1), 0);
 
   const wireTotals: Record<string, { material: string; diameter: string; length: number }> = {};
   const fittingTotals: Record<string, { type: string; pinSize: string; diameter: string; quantity: number }> = {};
@@ -193,11 +192,16 @@ export default function ProjectDetail() {
     if (!recipientEmail) return;
     setIsSending(true);
 
-    // Collect all photos from all components
-    const allPhotos: string[] = [];
+    // Map photos to their component names
+    const photosWithContext: { dataUri: string; componentName: string }[] = [];
     (project.components || []).forEach((comp: any) => {
       if (comp.photos && Array.isArray(comp.photos)) {
-        allPhotos.push(...comp.photos);
+        comp.photos.forEach((photo: string) => {
+          photosWithContext.push({
+            dataUri: photo,
+            componentName: comp.type || "Unnamed Component"
+          });
+        });
       }
     });
 
@@ -209,7 +213,7 @@ export default function ProjectDetail() {
         recipientEmail: recipientEmail,
         components: project.components || [],
         miscellaneousHardware: project.miscellaneousHardware || [],
-        photos: allPhotos,
+        photos: photosWithContext,
         pickList: {
           wire: Object.values(wireTotals),
           fittings: Object.values(fittingTotals),
@@ -219,7 +223,7 @@ export default function ProjectDetail() {
       
       toast({
         title: "Email Sent Successfully",
-        description: `Professional specification for ${project.vesselName} (with ${allPhotos.length} photos) has been dispatched to ${recipientEmail}.`,
+        description: `Professional specification for ${project.vesselName} with ${photosWithContext.length} attributed photos has been dispatched.`,
       });
       setIsEmailDialogOpen(false);
     } catch (error: any) {
@@ -227,7 +231,7 @@ export default function ProjectDetail() {
       toast({
         variant: "destructive",
         title: "Dispatch Failed",
-        description: error.message || "Failed to send rigging specification email. Check your settings.",
+        description: error.message || "Failed to send rigging specification email.",
       });
     } finally {
       setIsSending(false);
