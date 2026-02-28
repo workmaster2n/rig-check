@@ -1,0 +1,129 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; line-height: 1.6; margin: 0; padding: 0; }
+  .container { max-width: 800px; margin: 0 auto; border: 1px solid #eee; }
+  .header { background: #262E33; color: #ffffff; padding: 30px; text-align: left; }
+  .header h1 { margin: 0; font-size: 28px; text-transform: uppercase; letter-spacing: 1px; }
+  .header p { margin: 5px 0 0; opacity: 0.8; font-size: 16px; }
+  .content { padding: 30px; }
+  .vessel-info { background: #f9f9f9; padding: 15px; border-radius: 4px; margin-bottom: 25px; border-left: 4px solid #1999e3; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 14px; }
+  th, td { border: 1px solid #eee; padding: 12px; text-align: left; }
+  th { background-color: #f4f4f4; color: #262E33; font-weight: bold; text-transform: uppercase; font-size: 12px; }
+  .section-title { color: #1999e3; border-bottom: 2px solid #1999e3; padding-bottom: 8px; margin-top: 40px; margin-bottom: 20px; font-size: 20px; }
+  .sub-section-title { font-size: 16px; color: #262E33; margin-top: 20px; margin-bottom: 10px; border-left: 3px solid #ccc; padding-left: 10px; }
+  .photo-gallery { margin-top: 40px; }
+  .photo-item { margin-bottom: 30px; background: #fff; border: 1px solid #eee; padding: 15px; border-radius: 4px; text-align: center; }
+  .photo-label { font-weight: bold; margin-bottom: 12px; display: block; color: #262E33; text-align: left; border-bottom: 1px solid #f0f0f0; padding-bottom: 8px; }
+  .footer { background: #f4f4f4; padding: 20px; text-align: center; font-size: 12px; color: #777; border-top: 1px solid #eee; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; background: #e1f5fe; color: #0288d1; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Rigging Specification</h1>
+      <p>{{vesselName}}</p>
+    </div>
+    
+    <div class="content">
+      <div class="vessel-info">
+        <strong>Project:</strong> {{projectName}}<br>
+        {{#if boatType}}<strong>Vessel Model:</strong> {{boatType}}{{/if}}
+      </div>
+
+      <h2 class="section-title">Component Inventory</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Component</th>
+            <th>Dimensions</th>
+            <th>Terminations & Pins</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each components}}
+          <tr>
+            <td>
+              <strong>{{type}}</strong><br>
+              <span class="badge">Qty: {{quantity}}</span>
+            </td>
+            <td>
+              Length: {{length}}<br>
+              Dia: {{diameter}}<br>
+              Mat: {{material}}
+            </td>
+            <td>
+              <strong>Upper:</strong> {{upperTermination}} ({{pinSizeUpper}})<br>
+              <strong>Lower:</strong> {{lowerTermination}} ({{pinSizeLower}})
+            </td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+
+      <h2 class="section-title">Bill of Materials (Pick List)</h2>
+      
+      <div class="sub-section-title">Wire & Standing Rigging</div>
+      <table>
+        <thead><tr><th>Material</th><th>Diameter</th><th>Total Req.</th></tr></thead>
+        <tbody>
+          {{#each pickList.wire}}
+          <tr><td>{{material}}</td><td>{{diameter}}</td><td><strong>{{length}}m</strong></td></tr>
+          {{/each}}
+        </tbody>
+      </table>
+
+      <div class="sub-section-title">Fittings & Terminals</div>
+      <table>
+        <thead><tr><th>Type</th><th>Specs (Pin/Wire)</th><th>Qty</th></tr></thead>
+        <tbody>
+          {{#each pickList.fittings}}
+          <tr><td>{{type}}</td><td>Pin: {{pinSize}} / Wire: {{diameter}}</td><td><strong>{{quantity}}x</strong></td></tr>
+          {{/each}}
+        </tbody>
+      </table>
+
+      <div class="sub-section-title">Clevis Pins</div>
+      <table>
+        <thead><tr><th>Size / Diameter</th><th>Total Quantity</th></tr></thead>
+        <tbody>
+          {{#each pickList.pins}}
+          <tr><td>Clevis Pin {{size}}</td><td><strong>{{quantity}}x</strong></td></tr>
+          {{/each}}
+        </tbody>
+      </table>
+
+      {{#if miscellaneousHardware}}
+      <h2 class="section-title">Miscellaneous Hardware</h2>
+      <ul>
+        {{#each miscellaneousHardware}}
+        <li style="margin-bottom: 8px;"><strong>{{quantity}}x</strong> {{item}}</li>
+        {{/each}}
+      </ul>
+      {{/if}}
+
+      {{#if photos}}
+      <h2 class="section-title">Survey Observations & Photos</h2>
+      <div class="photo-gallery">
+        {{#each photos}}
+        <div class="photo-item">
+          <span class="photo-label">Component Reference: {{componentName}}</span>
+          <img src="cid:{{cid}}" width="600" style="max-width: 100%; border: 1px solid #ddd; border-radius: 2px;" alt="{{componentName}}" />
+        </div>
+        {{/each}}
+      </div>
+      {{/if}}
+    </div>
+
+    <div class="footer">
+      <p>This report was generated professionally by RigSurvey Specialist Tool.</p>
+      <p>&copy; {{vesselName}} Rigging Survey Report</p>
+    </div>
+  </div>
+</body>
+</html>
