@@ -35,7 +35,7 @@ export type RiggingEmailOutput = z.infer<typeof RiggingEmailOutputSchema>;
 
 const prompt = ai.definePrompt({
   name: 'generateRiggingEmailPrompt',
-  model: 'googleai/gemini-1.5-flash-latest',
+  model: 'googleai/gemini-1.5-flash',
   input: { schema: RiggingEmailInputSchema },
   output: { schema: RiggingEmailOutputSchema },
   prompt: `You are a professional marine rigger assistant. Format a comprehensive and professional rigging specification report for a client.

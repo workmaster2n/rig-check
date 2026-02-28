@@ -425,7 +425,14 @@ export default function ProjectDetail() {
                     </div>
                     <div className="w-24 space-y-2">
                       <Label>Qty</Label>
-                      <Input type="number" value={newMisc.quantity} onChange={(e) => setNewMisc({...newMisc, quantity: parseInt(e.target.value)})} />
+                      <Input 
+                        type="number" 
+                        value={isNaN(newMisc.quantity) ? "" : newMisc.quantity} 
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value);
+                          setNewMisc({...newMisc, quantity: isNaN(val) ? 0 : val});
+                        }} 
+                      />
                     </div>
                     <Button onClick={handleAddMisc} className="bg-primary">Add</Button>
                   </div>
