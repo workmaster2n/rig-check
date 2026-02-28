@@ -16,7 +16,7 @@ import Mailgun from 'mailgun.js';
 const mailgun = new Mailgun(formData);
 const mg = mailgun.client({
   username: 'api',
-  key: 'f26e7e1a88bfb3a3df8612e74500ed14-58d4d6a2-d3ca690e',
+  key: process.env.MAILGUN_API_KEY || '',
 });
 
 const RiggingEmailInputSchema = z.object({
@@ -97,7 +97,10 @@ export async function generateRiggingEmail(input: RiggingEmailInput): Promise<Ri
 export async function sendRiggingEmail(input: RiggingEmailInput) {
   const result = await generateRiggingEmail(input);
   
-  const domain = process.env.MAILGUN_DOMAIN || 'sandbox67677.mailgun.org';
+  const domain = process.env.MAILGUN_DOMAIN || '';
+  if (!domain) {
+    throw new Error('MAILGUN_DOMAIN environment variable is not set in .env');
+  }
   
   try {
     await mg.messages.create(domain, {

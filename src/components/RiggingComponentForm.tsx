@@ -158,7 +158,7 @@ export function RiggingComponentForm({ initialData, onSubmit, onCancel }: Riggin
                   <Input 
                     type="number" 
                     {...field} 
-                    value={field.value ?? 1}
+                    value={isNaN(Number(field.value)) ? 0 : field.value}
                     onChange={e => {
                       const val = parseInt(e.target.value);
                       field.onChange(isNaN(val) ? 0 : val);
