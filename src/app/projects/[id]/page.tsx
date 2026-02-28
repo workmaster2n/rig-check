@@ -427,7 +427,7 @@ export default function ProjectDetail() {
                       <Label>Qty</Label>
                       <Input 
                         type="number" 
-                        value={isNaN(newMisc.quantity) ? "" : newMisc.quantity} 
+                        value={newMisc.quantity === null || newMisc.quantity === undefined || isNaN(newMisc.quantity) ? "" : newMisc.quantity} 
                         onChange={(e) => {
                           const val = parseInt(e.target.value);
                           setNewMisc({...newMisc, quantity: isNaN(val) ? 0 : val});

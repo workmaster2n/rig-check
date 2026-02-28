@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Camera, X, Image as ImageIcon, Plus, CameraIcon } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -158,7 +158,7 @@ export function RiggingComponentForm({ initialData, onSubmit, onCancel }: Riggin
                   <Input 
                     type="number" 
                     {...field} 
-                    value={isNaN(field.value) ? "" : field.value}
+                    value={field.value === undefined || field.value === null || isNaN(field.value) ? "" : field.value}
                     onChange={e => {
                       const val = parseInt(e.target.value);
                       field.onChange(isNaN(val) ? 0 : val);
