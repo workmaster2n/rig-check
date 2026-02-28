@@ -9,7 +9,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { googleAI, gemini15Flash } from '@genkit-ai/google-genai';
 
 const RiggingEmailInputSchema = z.object({
   projectName: z.string(),
@@ -36,7 +35,7 @@ export type RiggingEmailOutput = z.infer<typeof RiggingEmailOutputSchema>;
 
 const prompt = ai.definePrompt({
   name: 'generateRiggingEmailPrompt',
-  model: gemini15Flash,
+  model: 'googleai/gemini-1.5-flash',
   input: { schema: RiggingEmailInputSchema },
   output: { schema: RiggingEmailOutputSchema },
   prompt: `You are a professional marine rigger assistant. Format a comprehensive and professional rigging specification report for a client.

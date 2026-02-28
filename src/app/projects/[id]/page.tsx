@@ -393,7 +393,7 @@ export default function ProjectDetail() {
                               {isCompleted ? (
                                 <CheckCircle2 className="w-5 h-5 text-accent" />
                               ) : (
-                                <Circle className="w-5 h-5 text-muted-foreground/30" />
+                                <CheckCircle2 className="w-5 h-5 text-muted-foreground/30" />
                               )}
                               <span className={isCompleted ? "text-accent font-medium line-through opacity-70" : "font-medium"}>
                                 {item.task}
