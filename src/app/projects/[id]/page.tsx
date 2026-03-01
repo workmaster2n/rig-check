@@ -32,6 +32,7 @@ import {
   FileSpreadsheet
 } from "lucide-react";
 import Link from "next/link";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -59,6 +60,7 @@ export default function ProjectDetail() {
   
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [recipientEmail, setRecipientEmail] = useState("");
+  const [attachSpreadsheet, setAttachSpreadsheet] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
   const projectRef = useMemoFirebase(() => {
@@ -228,7 +230,8 @@ export default function ProjectDetail() {
           wire: Object.values(wireTotals),
           fittings: Object.values(fittingTotals),
           pins: Object.values(pinTotals),
-        }
+        },
+        attachSpreadsheet,
       });
       
       toast({
@@ -575,7 +578,7 @@ export default function ProjectDetail() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="recipient">Recipient Email</Label>
-              <Input 
+              <Input
                 id="recipient"
                 placeholder="client@example.com"
                 value={recipientEmail}
@@ -587,6 +590,16 @@ export default function ProjectDetail() {
                   Note: You are logged in as a guest. Please provide an email.
                 </p>
               )}
+            </div>
+            <div className="flex items-center gap-3 pt-1">
+              <Checkbox
+                id="attach-spreadsheet"
+                checked={attachSpreadsheet}
+                onCheckedChange={(checked) => setAttachSpreadsheet(checked === true)}
+              />
+              <Label htmlFor="attach-spreadsheet" className="cursor-pointer font-normal">
+                Attach Bill of Materials spreadsheet (.xlsx)
+              </Label>
             </div>
           </div>
           <DialogFooter>
