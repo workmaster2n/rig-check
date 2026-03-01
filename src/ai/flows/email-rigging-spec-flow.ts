@@ -7,8 +7,7 @@
  * - sendRiggingEmail - Dispatches the email via Mailgun with labeled inline attachments.
  */
 
-import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 import formData from 'form-data';
 import Mailgun from 'mailgun.js';
 import Handlebars from 'handlebars';
