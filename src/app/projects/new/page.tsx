@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getSettings, RigSettings } from "@/lib/store";
 import { useUser, useFirestore } from "@/firebase";
+import { useSettings } from "@/lib/use-settings";
 import { doc, collection, serverTimestamp } from "firebase/firestore";
 import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { Button } from "@/components/ui/button";
@@ -18,10 +18,10 @@ export default function NewProject() {
   const router = useRouter();
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
+  const { settings, isLoading: isSettingsLoading } = useSettings();
   const [projectName, setProjectName] = useState("");
   const [vesselName, setVesselName] = useState("");
   const [boatType, setBoatType] = useState("");
-  const [settings, setSettings] = useState<RigSettings | null>(null);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -29,13 +29,9 @@ export default function NewProject() {
     }
   }, [user, isUserLoading, router]);
 
-  useEffect(() => {
-    setSettings(getSettings());
-  }, []);
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!projectName || !vesselName || !settings || !user || !firestore) return;
+    if (!projectName || !vesselName || !user || !firestore) return;
 
     const projectId = Math.random().toString(36).substr(2, 9);
     
@@ -109,15 +105,15 @@ export default function NewProject() {
 
             <div className="space-y-2">
               <Label htmlFor="boatType">Boat Type / Model</Label>
-              {settings ? (
-                <SearchableSelect 
+              {isSettingsLoading ? (
+                <Input placeholder="Loading boat types..." disabled />
+              ) : (
+                <SearchableSelect
                   options={settings.productionBoats}
                   value={boatType}
                   onChange={setBoatType}
                   placeholder="Select production boat..."
                 />
-              ) : (
-                <Input placeholder="Loading boat types..." disabled />
               )}
             </div>
 

@@ -54,9 +54,8 @@ export interface RigSettings {
 }
 
 const STORAGE_KEY = 'rig_survey_projects';
-const SETTINGS_KEY = 'rig_survey_settings';
 
-const DEFAULT_SETTINGS: RigSettings = {
+export const DEFAULT_SETTINGS: RigSettings = {
   componentTypes: [
     "Main Shroud (Cap)",
     "Lower Shroud",
@@ -147,21 +146,3 @@ export const getProject = (id: string): RigProject | undefined => {
   return getProjects().find((p) => p.id === id);
 };
 
-export const getSettings = (): RigSettings => {
-  if (typeof window === 'undefined') return DEFAULT_SETTINGS;
-  const stored = localStorage.getItem(SETTINGS_KEY);
-  if (!stored) return DEFAULT_SETTINGS;
-  
-  const parsed = JSON.parse(stored);
-  // Ensure new fields exist for backward compatibility
-  if (!parsed.materialTypes) parsed.materialTypes = DEFAULT_SETTINGS.materialTypes;
-  if (!parsed.productionBoats) parsed.productionBoats = DEFAULT_SETTINGS.productionBoats;
-  if (!parsed.defaultChecklist) parsed.defaultChecklist = DEFAULT_SETTINGS.defaultChecklist;
-  if (!parsed.boatSpecificChecklists) parsed.boatSpecificChecklists = {};
-  
-  return parsed;
-};
-
-export const saveSettings = (settings: RigSettings) => {
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-};
