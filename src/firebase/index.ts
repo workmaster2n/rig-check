@@ -32,13 +32,16 @@ export function initializeFirebase() {
   return getSdks(getApp());
 }
 
+let emulatorsConnected = false;
+
 export function getSdks(firebaseApp: FirebaseApp) {
   const auth = getAuth(firebaseApp);
   const firestore = getFirestore(firebaseApp);
 
-  if (process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === 'true') {
+  if (process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === 'true' && !emulatorsConnected) {
     connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
     connectFirestoreEmulator(firestore, 'localhost', 8080);
+    emulatorsConnected = true;
   }
 
   return { firebaseApp, auth, firestore };
