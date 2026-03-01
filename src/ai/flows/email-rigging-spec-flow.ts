@@ -13,6 +13,8 @@ import Mailgun from 'mailgun.js';
 import Handlebars from 'handlebars';
 import fs from 'fs';
 import path from 'path';
+import * as XLSX from 'xlsx';
+import { buildProjectWorkbook } from '@/lib/export-spreadsheet';
 
 const mailgun = new Mailgun(formData);
 
@@ -32,13 +34,14 @@ const RiggingEmailInputSchema = z.object({
     fittings: z.array(z.any()),
     pins: z.array(z.any()),
   }),
+  attachSpreadsheet: z.boolean().optional(),
 });
 
 export type RiggingEmailInput = z.infer<typeof RiggingEmailInputSchema>;
 
 export async function generateRiggingEmail(input: RiggingEmailInput): Promise<{ html: string; subject: string; photosWithCid: any[] }> {
   const templatePath = path.join(process.cwd(), 'src/ai/templates/rigging-report.hbs');
-  
+
   let templateSource: string;
   try {
     templateSource = fs.readFileSync(templatePath, 'utf8');
@@ -73,10 +76,10 @@ export async function generateRiggingEmail(input: RiggingEmailInput): Promise<{ 
 
 export async function sendRiggingEmail(input: RiggingEmailInput) {
   const { html, subject, photosWithCid } = await generateRiggingEmail(input);
-  
+
   const domain = process.env.MAILGUN_DOMAIN || '';
   const apiKey = process.env.MAILGUN_API_KEY || '';
-  
+
   if (!domain || !apiKey) {
     throw new Error('MAILGUN_DOMAIN and MAILGUN_API_KEY environment variables must be set.');
   }
@@ -95,7 +98,7 @@ export async function sendRiggingEmail(input: RiggingEmailInput) {
       const header = parts[0];
       const mimeMatch = header.match(/data:(.*?);/);
       const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
-      
+
       return {
         data: Buffer.from(base64, 'base64'),
         filename: photoObj.filename,
@@ -106,7 +109,27 @@ export async function sendRiggingEmail(input: RiggingEmailInput) {
       return null;
     }
   }).filter(Boolean);
-  
+
+  // Build XLSX attachment if requested
+  const attachments: any[] = [];
+  if (input.attachSpreadsheet) {
+    const wb = buildProjectWorkbook(
+      input.vesselName,
+      input.pickList.wire,
+      input.pickList.fittings,
+      input.pickList.pins,
+      input.miscellaneousHardware,
+      input.components
+    );
+    const xlsxBuffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    const safeName = input.vesselName.replace(/[^a-z0-9]/gi, '-');
+    attachments.push({
+      data: xlsxBuffer,
+      filename: `${safeName}-rigging-spec.xlsx`,
+      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+  }
+
   try {
     await mg.messages.create(domain, {
       from: `RigSurvey Specialist <postmaster@${domain}>`,
@@ -115,6 +138,7 @@ export async function sendRiggingEmail(input: RiggingEmailInput) {
       text: `Rigging specification for ${input.vesselName} is attached as an HTML report.`,
       html: html,
       inline: inlineImages as any,
+      ...(attachments.length > 0 && { attachment: attachments }),
     });
     return { success: true };
   } catch (error: any) {

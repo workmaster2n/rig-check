@@ -10,14 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RiggingComponentForm } from "@/components/RiggingComponentForm";
-import { 
-  Ship, 
-  Plus, 
-  Trash2, 
-  Edit2, 
-  ChevronLeft, 
-  Package, 
-  Ruler, 
+import {
+  Ship,
+  Plus,
+  Trash2,
+  Edit2,
+  ChevronLeft,
+  Package,
+  Ruler,
   Settings,
   Info,
   ClipboardCheck,
@@ -28,9 +28,11 @@ import {
   Wrench,
   Dna,
   Mail,
-  Send
+  Send,
+  FileSpreadsheet
 } from "lucide-react";
 import Link from "next/link";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -43,6 +45,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { sendRiggingEmail } from "@/ai/flows/email-rigging-spec-flow";
+import { downloadProjectSpreadsheet } from "@/lib/export-spreadsheet";
 
 export default function ProjectDetail() {
   const { id } = useParams();
@@ -57,6 +60,7 @@ export default function ProjectDetail() {
   
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [recipientEmail, setRecipientEmail] = useState("");
+  const [attachSpreadsheet, setAttachSpreadsheet] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
   const projectRef = useMemoFirebase(() => {
@@ -226,7 +230,8 @@ export default function ProjectDetail() {
           wire: Object.values(wireTotals),
           fittings: Object.values(fittingTotals),
           pins: Object.values(pinTotals),
-        }
+        },
+        attachSpreadsheet,
       });
       
       toast({
@@ -270,13 +275,22 @@ export default function ProjectDetail() {
             </div>
           </div>
         </div>
-        <Button 
-          onClick={() => setIsEmailDialogOpen(true)}
-          className="bg-accent/10 hover:bg-accent/20 text-accent border border-accent/30 gap-2 font-bold"
-        >
-          <Mail className="w-4 h-4" />
-          Email Specification
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => downloadProjectSpreadsheet(project, wireTotals, fittingTotals, pinTotals)}
+            className="bg-accent/10 hover:bg-accent/20 text-accent border border-accent/30 gap-2 font-bold"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            Spreadsheet
+          </Button>
+          <Button
+            onClick={() => setIsEmailDialogOpen(true)}
+            className="bg-accent/10 hover:bg-accent/20 text-accent border border-accent/30 gap-2 font-bold"
+          >
+            <Mail className="w-4 h-4" />
+            Email Specification
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -564,7 +578,7 @@ export default function ProjectDetail() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="recipient">Recipient Email</Label>
-              <Input 
+              <Input
                 id="recipient"
                 placeholder="client@example.com"
                 value={recipientEmail}
@@ -576,6 +590,16 @@ export default function ProjectDetail() {
                   Note: You are logged in as a guest. Please provide an email.
                 </p>
               )}
+            </div>
+            <div className="flex items-center gap-3 pt-1">
+              <Checkbox
+                id="attach-spreadsheet"
+                checked={attachSpreadsheet}
+                onCheckedChange={(checked) => setAttachSpreadsheet(checked === true)}
+              />
+              <Label htmlFor="attach-spreadsheet" className="cursor-pointer font-normal">
+                Attach Bill of Materials spreadsheet (.xlsx)
+              </Label>
             </div>
           </div>
           <DialogFooter>
