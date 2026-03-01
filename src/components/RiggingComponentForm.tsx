@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { RiggingComponent, RiggingComponentSchema, getSettings, RigSettings } from "@/lib/store";
+import { RiggingComponent, RiggingComponentSchema } from "@/lib/store";
+import { useSettings } from "@/lib/use-settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,18 +23,14 @@ interface RiggingComponentFormProps {
 }
 
 export function RiggingComponentForm({ initialData, onSubmit, onCancel }: RiggingComponentFormProps) {
-  const [settings, setSettings] = useState<RigSettings | null>(null);
+  const { settings, isLoading } = useSettings();
   const [photos, setPhotos] = useState<string[]>(initialData?.photos || []);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    setSettings(getSettings());
-  }, []);
 
   const form = useForm<RiggingComponent>({
     resolver: zodResolver(RiggingComponentSchema),
@@ -123,7 +120,7 @@ export function RiggingComponentForm({ initialData, onSubmit, onCancel }: Riggin
     }
   };
 
-  if (!settings) return null;
+  if (isLoading) return null;
 
   return (
     <Form {...form}>

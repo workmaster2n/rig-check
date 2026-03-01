@@ -94,6 +94,14 @@ service cloud.firestore {
       }
     }
 
+    /**
+     * @description User settings document stored per-user.
+     * @path /users/{userId}/settings/{settingId}
+     */
+    match /users/{userId}/settings/{settingId} {
+      allow read, write: if isOwner(userId);
+    }
+
     // --- Catch-All Deny ---
     // Explicitly deny access to any other paths to ensure a "closed by default" security posture.
     match /{document=**} {

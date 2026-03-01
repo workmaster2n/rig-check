@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { getSettings, saveSettings, RigSettings } from "@/lib/store";
+import { RigSettings } from "@/lib/store";
+import { useSettings } from "@/lib/use-settings";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -29,26 +30,17 @@ import {
 } from "@/components/ui/dialog";
 
 export default function AdminPage() {
-  const [settings, setSettings] = useState<RigSettings | null>(null);
+  const { settings, updateSettings, isLoading } = useSettings();
   const [newComponentType, setNewComponentType] = useState("");
   const [newTerminationType, setNewTerminationType] = useState("");
   const [newMaterialType, setNewMaterialType] = useState("");
   const [newBoatType, setNewBoatType] = useState("");
   const [newChecklistItem, setNewChecklistItem] = useState("");
-  
+
   const [selectedBoatForChecklist, setSelectedBoatForChecklist] = useState<string | null>(null);
   const [newBoatSpecificItem, setNewBoatSpecificItem] = useState("");
 
-  useEffect(() => {
-    setSettings(getSettings());
-  }, []);
-
-  if (!settings) return <div className="p-20 text-center">Loading Settings...</div>;
-
-  const updateSettings = (updated: RigSettings) => {
-    saveSettings(updated);
-    setSettings(updated);
-  };
+  if (isLoading) return <div className="p-20 text-center">Loading Settings...</div>;
 
   const handleAddComponentType = () => {
     if (!newComponentType.trim()) return;
