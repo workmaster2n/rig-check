@@ -10,14 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RiggingComponentForm } from "@/components/RiggingComponentForm";
-import { 
-  Ship, 
-  Plus, 
-  Trash2, 
-  Edit2, 
-  ChevronLeft, 
-  Package, 
-  Ruler, 
+import {
+  Ship,
+  Plus,
+  Trash2,
+  Edit2,
+  ChevronLeft,
+  Package,
+  Ruler,
   Settings,
   Info,
   ClipboardCheck,
@@ -28,7 +28,8 @@ import {
   Wrench,
   Dna,
   Mail,
-  Send
+  Send,
+  FileSpreadsheet
 } from "lucide-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
@@ -43,6 +44,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { sendRiggingEmail } from "@/ai/flows/email-rigging-spec-flow";
+import { downloadProjectSpreadsheet } from "@/lib/export-spreadsheet";
 
 export default function ProjectDetail() {
   const { id } = useParams();
@@ -270,13 +272,22 @@ export default function ProjectDetail() {
             </div>
           </div>
         </div>
-        <Button 
-          onClick={() => setIsEmailDialogOpen(true)}
-          className="bg-accent/10 hover:bg-accent/20 text-accent border border-accent/30 gap-2 font-bold"
-        >
-          <Mail className="w-4 h-4" />
-          Email Specification
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => downloadProjectSpreadsheet(project, wireTotals, fittingTotals, pinTotals)}
+            className="bg-accent/10 hover:bg-accent/20 text-accent border border-accent/30 gap-2 font-bold"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            Spreadsheet
+          </Button>
+          <Button
+            onClick={() => setIsEmailDialogOpen(true)}
+            className="bg-accent/10 hover:bg-accent/20 text-accent border border-accent/30 gap-2 font-bold"
+          >
+            <Mail className="w-4 h-4" />
+            Email Specification
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
