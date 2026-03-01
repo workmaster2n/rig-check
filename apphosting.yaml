@@ -19,8 +19,6 @@ env:
     secret: FIREBASE_APP_ID
 
   # Server-side secrets
-  - variable: GEMINI_API_KEY
-    secret: GEMINI_API_KEY
   - variable: MAILGUN_API_KEY
     secret: MAILGUN_API_KEY
   - variable: MAILGUN_DOMAIN
