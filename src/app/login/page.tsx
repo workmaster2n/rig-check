@@ -15,6 +15,25 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Anchor, Loader2, Mail, Lock } from "lucide-react";
 
+function getFriendlyError(code: string): string {
+  switch (code) {
+    case 'auth/invalid-credential':
+    case 'auth/wrong-password':
+    case 'auth/user-not-found':
+      return 'Invalid email or password.';
+    case 'auth/email-already-in-use':
+      return 'An account with this email already exists.';
+    case 'auth/weak-password':
+      return 'Password must be at least 6 characters.';
+    case 'auth/invalid-email':
+      return 'Please enter a valid email address.';
+    case 'auth/too-many-requests':
+      return 'Too many attempts. Please try again later.';
+    default:
+      return 'Something went wrong. Please try again.';
+  }
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const auth = useAuth();
@@ -23,6 +42,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user && !isUserLoading) {
@@ -30,19 +50,31 @@ export default function LoginPage() {
     }
   }, [user, isUserLoading, router]);
 
-  const handleAuth = (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    if (isSignUp) {
-      initiateEmailSignUp(auth, email, password);
-    } else {
-      initiateEmailSignIn(auth, email, password);
+    setError(null);
+    try {
+      if (isSignUp) {
+        await initiateEmailSignUp(auth, email, password);
+      } else {
+        await initiateEmailSignIn(auth, email, password);
+      }
+    } catch (err: any) {
+      setError(getFriendlyError(err.code));
+      setLoading(false);
     }
   };
 
-  const handleAnonymous = () => {
+  const handleAnonymous = async () => {
     setLoading(true);
-    initiateAnonymousSignIn(auth);
+    setError(null);
+    try {
+      await initiateAnonymousSignIn(auth);
+    } catch (err: any) {
+      setError(getFriendlyError(err.code));
+      setLoading(false);
+    }
   };
 
   if (isUserLoading) {
@@ -97,6 +129,9 @@ export default function LoginPage() {
                 />
               </div>
             </div>
+            {error && (
+              <p className="text-sm text-destructive">{error}</p>
+            )}
             <Button type="submit" className="w-full bg-accent text-background font-bold" disabled={loading}>
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               {isSignUp ? "Create Account" : "Sign In"}
